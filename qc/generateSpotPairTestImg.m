@@ -23,7 +23,7 @@ function [img1,img2,spotPositions,spotSizes,spotIntensities,spotDensity] = ...
 % OUTPUT
 % img1 is the image with the first half spot pairs
 % img2 is the image with the other half spot pairs
-% spotPositions lists the positions of the spot pairs in pixel units:
+% spotPositions lists the positions of the spot pairs in nm units:
     % [x1 y1 x2 y2] in 2D
     % [x1 y1 z1 x2 y2 z2] in 3D
 % spotSizes lists the sizes of all the spots:
@@ -132,6 +132,9 @@ for i=1:nPairs
         spotIntensities(i,2),spotSizes(i,nDims+1:2*nDims),voxSize,nDims);
     
 end
+
+% convert spot positions from pixel to nm
+spotSizes = spotSizes .* repmat(voxSize,nPairs,2);
 
 end
 
