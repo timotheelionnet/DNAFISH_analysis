@@ -62,7 +62,7 @@ voxSize = reshape(voxSize(1:nDims),1,[]);
 meanSpotSize = reshape(meanSpotSize(1:nDims),1,[]); 
     
 % compute x,y,z radius of a spot pair (in pixel units)
-pairWidth = (meanSeparationDist/2+ 3*meanSpotSize)./voxSize;
+pairWidth = (meanSeparationDist / 2 + 3 * meanSpotSize)./voxSize;
 
 % generate spot pairs in a central region so they do not get cropped
 % pairCenters in pixel units
@@ -134,7 +134,7 @@ for i=1:nPairs
 end
 
 % convert spot positions from pixel to nm
-spotSizes = spotSizes .* repmat(voxSize,nPairs,2);
+spotPositions = spotPositions .* repmat(voxSize,nPairs,2);
 
 end
 
