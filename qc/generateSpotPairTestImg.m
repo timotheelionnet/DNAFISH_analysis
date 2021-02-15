@@ -35,6 +35,9 @@ function [img1,img2,spotPositions,spotSizes,spotIntensities,spotDensity] = ...
     % it is unitless (basically volue occupied by all spot pairs divided by
     % the total image volume) and is a bit overestimated. Useful to avoid 
     % crowded conditions.
+    
+% intensity, distances and spot sizes are all gaussian-distributed around 
+% their respective means. An offset of 6 noiseSts is added to the images.
 
 % checking that inputs have compatible dimensionality, set nDims
 if numel(imSize) == 2

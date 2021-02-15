@@ -12,8 +12,8 @@ stdSeparationDist2D = 100; % std of the distance between two spots in a pair in 
 meanSpotSize2D = [200,500]; % average spot size in nm in x and y (can be different)
 stdSpotSize2D = [20,20]; % std of spot size in nm in x and y (can be different)
 meanSpotInt2D = 1000; % average spot intensity (amplitude of the 2D gaussian)
-stdSpotInt2D = 300; % std of the spot intensity
-noiseStd2D = 100; % std of gaussian noise added to image
+stdSpotInt2D = 300; % std of the spot
+noiseStd2D = 100;
 
 
 [img2D1,img2D2,spotPositions2D,spotSizes2D,spotIntensities2D,spotDensity2D] = ...
@@ -36,16 +36,16 @@ save_as_tiff(img2D1,fullfile(saving_folder,'im2D1.tif'));
 save_as_tiff(img2D2,fullfile(saving_folder,'im2D2.tif'));
 
 %% use this section to test the function in  3D
-imSize3D = [500,500,20];  % size in pixel of image
-voxSize3D = [100,100,500]; % size in nm of pixels in x,y,z (can be different)
-nPairs3D = 20; % number of spot pairs to fit in the image
-meanSeparationDist3D = 1000; % average distance between two spots in a pair in nm
-stdSeparationDist3D = 100; % std of the distance between two spots in a pair in nm
-meanSpotSize3D = [200,500,1000]; % average spot size in nm in x,y,z (can be different)
-stdSpotSize3D = [200,200,200]; % std of spot size in nm in x,y,z (can be different)
-meanSpotInt3D = 1000; % average spot intensity (amplitude of the 2D gaussian)
-stdSpotInt3D = 300; % std of the spot intensity
-noiseStd3D = 100; % std of gaussian noise added to image
+imSize3D = [500,500,20];
+voxSize3D = [100,100,500];
+nPairs3D = 20;
+meanSeparationDist3D = 1000;
+stdSeparationDist3D = 1000;
+meanSpotSize3D = [200,500,1000];
+stdSpotSize3D = [200,200,200];
+meanSpotInt3D = 1000;
+stdSpotInt3D = 300;
+noiseStd3D = 100;
 
 [img3D1,img3D2,spotPositions3D,spotSizes3D,spotIntensitie3Ds,spotDensity3D] = ...
     generateSpotPairTestImg(imSize3D,voxSize3D,nPairs3D,...
