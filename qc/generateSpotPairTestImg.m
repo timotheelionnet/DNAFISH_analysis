@@ -10,9 +10,15 @@ function [img1,img2,spotPositions,spotSizes,spotIntensities,spotDensity] = ...
 % voxSize: [dx,dy] or [dx,dy,dz] is the vox size in nanometers. If imSize
     % has two elements, dz will be ignored (if present).
 % nPairs: number of spot pairs in image
-% separationDist: distance in nm of between the 2 spots in each pair
-% spotSize: [sx,sy,sz]: sigma in nm in each dimension of the spot intensity
+% meanSeparationDist: mean distance in nm of between the 2 spots in each pair
+% stdSeparationDist: std of the distance in nm (distances are gaussian
+% distributed; set to zero to make the distance deterministic).
+% meanSpotSize: [mean_sx,mean_sy,mean_sz]: mean sigma in nm in each dimension of the spot intensity
 % profile.
+% stdSpotSize: [std_sx,std_sy,std_sz]: std of sigma in nm in each dimension of the spot intensity
+% profile (sport sizes are gaussian
+% distributed; set to zero to make the size deterministic).
+% noiseStd: standard deviation of the gaussian noise added to the image (set to zero to ignore)
 
 % OUTPUT
 % img1 is the image with the first half spot pairs
@@ -20,6 +26,11 @@ function [img1,img2,spotPositions,spotSizes,spotIntensities,spotDensity] = ...
 % spotPositions lists the positions of the spot pairs in pixel units:
     % [x1 y1 x2 y2] in 2D
     % [x1 y1 z1 x2 y2 z2] in 3D
+% spotSizes lists the sizes of all the spots:
+    % [sx1 sy1 sx2 sy2] in 2D (nm)
+    % [sx1 sy1 sz1 sx2 sy2 sz2] in 3D (nm)
+% spotIntensities lists the intensity of all the spots:
+    % [I1 I2] Intensity value equals the amplitude of the gaussian
 % spotDensity is the approximated density of spots in the image
     % it is unitless (basically volue occupied by all spot pairs divided by
     % the total image volume) and is a bit overestimated. Useful to avoid 
