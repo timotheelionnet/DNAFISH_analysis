@@ -31,6 +31,13 @@ for i=1:numel(params.channelDescription.fishChannelList)
             disp('Processing cropped images of:')
             disp(f)
     
+            %load loc3 file
+            loc = load(fullfile(CropFolder,'location.loc3'),'-ascii');
+            if isempty(loc)
+                disp('loc3 file is empty!')
+                continue
+            end
+            
             %find out nDigitsMax for each image, test up to 5 digits
             for l = 1:5
                 try 
@@ -41,11 +48,8 @@ for i=1:numel(params.channelDescription.fishChannelList)
                 end
                 nDigitsMax1 = l;
                 break
-            end
-    
-            %load loc3 file
-            loc = load(fullfile(CropFolder,'location.loc3'),'-ascii');
-    
+            end    
+            
             %loop through loci and calculate centriods
             cen = [];
             for k = 1:length(loc(:,1))
@@ -85,6 +89,14 @@ for i=1:numel(params.channelDescription.fishChannelList)
         disp('Processing cropped images of:')
         disp(f)
     
+        %load centroid file
+        try
+            cen = load(fullfile(CropFolder,'centroid.loc3'),'-ascii');
+        catch
+            disp('Centroid loc3 not find!')
+            continue
+        end
+        
         %find out nDigitsMax for each image, test up to 5 digits
         for l = 1:5
             try 
@@ -95,10 +107,7 @@ for i=1:numel(params.channelDescription.fishChannelList)
             end
             nDigitsMax1 = l;
             break
-        end
-    
-        %load centroid file
-        cen = load(fullfile(CropFolder,'centroid.loc3'),'-ascii');
+        end   
     
         %loop through loci and calculate Rg
         r = [];
@@ -148,6 +157,13 @@ for i=1:numel(params.channelDescription.fishChannelList)
         disp('Processing cropped images of:')
         disp(f)
     
+        %load loc3 file
+        loc = load(fullfile(CropFolder,'location.loc3'),'-ascii');
+        if isempty(loc)
+            disp('loc3 file is empty!')
+            continue
+        end
+    
         %find out nDigitsMax for each image, test up to 5 digits
         for l = 1:5
             try 
@@ -159,9 +175,6 @@ for i=1:numel(params.channelDescription.fishChannelList)
             nDigitsMax1 = l;
             break
         end
-    
-        %load loc3 file
-        loc = load(fullfile(CropFolder,'location.loc3'),'-ascii');
     
         %loop through loci and calculate volumn
         count = [];
