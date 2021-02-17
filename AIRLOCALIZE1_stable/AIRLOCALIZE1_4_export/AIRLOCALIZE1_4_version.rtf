@@ -1,0 +1,68 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1187\cocoasubrtf400
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fmodern\fcharset0 Courier;}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f0\fs24 \cf0 AIRLOCALIZE 1_4\
+Timothee Lionnet 10/28/2013\
+\
+changes from version 1.3:\
+*changed the default smoothing method to difference of gaussians in order to speed up the filtering compared to Fourier based filter;\
+*added padding to the filtering step in order to remove artifacts near image borders\
+\
+Functions affected:\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f1\fs20 \cf0 params = set_detection_parameters(params,AIRLOCALIZE_version,varargin)
+\fs24 \
+
+\f0 now calls\
+\pard\pardeftab720
+
+\f1\fs20 \cf0 initialize_gaussian_mask_detection_parameters5\
+\pard\pardeftab720
+
+\fs24 \cf0 instead of\
+\pard\pardeftab720
+
+\fs20 \cf0 initialize_gaussian_mask_detection_parameters4
+\fs24 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f0 \cf0 updated default values for the bandpass filter optimized for the DOG filter\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f1\fs20 \cf0 params = set_detection_parameters(params,AIRLOCALIZE_version,varargin)\
+\pard\pardeftab720
+\cf0 p = detection_parameters_interface5(p)
+\fs24 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\pardirnatural
+
+\f0 \cf0 instead of \
+\pard\pardeftab720
+
+\f1\fs20 \cf0 p = detection_parameters_interface4(p)
+\fs24 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\pardirnatural
+
+\f0 \cf0 (commented out obsolete parameters in the GUI)\
+\
+\pard\pardeftab720
+
+\f1\fs20 \cf0 params = retrieve_smoothed_data(params)
+\f0\fs24 now calls\
+
+\f1\fs20 smooth_image_and_subtract_background4
+\f0\fs24 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+\cf0 instead of\
+\pard\pardeftab720
+
+\f1\fs20 \cf0 smooth_image_and_subtract_background5
+\fs24 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f0 \cf0 new function performs the DOG filter rather than the fourier based one}
