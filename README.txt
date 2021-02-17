@@ -10,9 +10,9 @@ analysis_overlap_between_loci.m
 Input loci match results and cropped loci images, compute cross correlation between match loci pairs.  
   
 mensure_cropped_loci.m  
-Input cropped loci images, compute centroid locations, radio of gyrations, and volumns of loci. *To be tested
+Input cropped loci images, compute centroid locations, radio of gyrations, and volumns of loci.
   
 plotPDF02032021.m  
-Input data, plot PDF and CDF. *Testing  
+Input data, plot PDF and CDF.   
   
 *fileset, useful, and AIIRLOCALIZE1_stable is too big for uploading
