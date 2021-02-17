@@ -1,0 +1,152 @@
+%% gaussian fit 2d
+% can be standard:
+%y = Imax * exp [ { (x-xc)^2 + (y - yc)^2 } / sigma_xy^2  ] + bg
+
+% or using the equation above integrated on each pixel
+% or using the equation above integrated on each pixel assuming bg =0
+function [Gaussout, resnorm] = gaussian_2D_fit_local(arr,xc,yc,p)
+
+
+%% input
+%arr is the data
+% all units in pix with origin at the edge of pixel i.e. leftmost corner
+% center corresponds to y = 0.5
+%xc yc are the guess center coordinates
+%p is the structure holding the fit parameters
+    %see definitions in "initialize_3D_gaussian_mask_detection_parameters"
+
+%% output
+%Gaussout is an array with the results:
+% Gaussout= [Imax,bg,sxy,xc,yc];
+%resnorm are the residuals
+    
+xc= ceil(xc); yc = ceil(yc);
+[nx ny] = size(arr);
+
+if ~isstruct(p)
+    p = struct('npix',{},'bg',{},'Imax',{},...
+        'sigma_xy',{},'sigma_z',{},...
+        'x0',{},'y0',{},'z0',{},'type',{});
+    p(1).npix = [3 3 3];
+    p.sxy = double(1.0);
+    p.x0 = xc;
+    p.y0 = yc;
+    
+    %p.type = 'integrated gaussian no bg';
+    p.type = 'integrated gaussian';
+    %p.type = 'standard gaussian';
+end
+
+xmin = max(xc-p.npix(1),1);
+xmax = min(xc+p.npix(1),nx); 
+ymin = max(yc-p.npix(2),1); 
+ymax = min(yc+p.npix(2),ny);
+
+data = arr(xmin:xmax,ymin:ymax);
+data = double(data);
+
+[nrows, ncols] = size(data);
+[c,r] = meshgrid(1:ncols,1:nrows);
+
+p.bg = double(min(min(data)));
+p.Imax = double(max(max(data))) - p.bg;
+
+Coeffs = [  p.Imax,              p.bg,            p.sxy,   p.x0,                p.y0];
+lb =     [  0,                   0,               0.1,     0,                   0];
+ub =     [  3000*(p.Imax),       p.Imax+p.bg,     10,      2*p.npix(1)+1.5,    2*p.npix(2)+1.5];
+pts = [r c];
+options = optimset('TolX',0.0001,'MaxIter',1000);
+%blw = find(data<2*(B-A)/3); % threshold data
+%data(blw)=0;
+if strcmp(p.type,'standard gaussian')
+    [Gaussout, resnorm]=lsqcurvefit(@gauss2D, Coeffs, pts,data,lb,ub,options);
+elseif strcmp(p.type,'integrated gaussian')
+    [Gaussout, resnorm]=lsqcurvefit(@gauss_integrated2D, Coeffs, pts,data,lb,ub,options);
+elseif strcmp(p.type,'integrated gaussian no bg')
+    [Gaussout, resnorm]=lsqcurvefit(@gauss_integrated2D_no_bg, Coeffs, pts,data,lb,ub,options);
+end
+Gaussout(4) = Gaussout(4) - 1 + xmin;
+Gaussout(5) = Gaussout(5) - 1 + ymin;
+
+end
+
+
+
+%% the standard gaussian
+function I = gauss2D(Coeffs, pts)
+
+gridSize = size(pts,2);
+r = pts(: , 1 : gridSize/2 );
+c = pts(: , gridSize/2 + 1 :gridSize );
+
+I = Coeffs(1) + Coeffs(2)*exp( -( (r-Coeffs(4)).^2 + (c-Coeffs(5)).^2 )/(2*Coeffs(3))  );
+end
+
+
+
+%% the gaussian that takes into account the integration of the intensity
+% over each pixel
+function I = gauss_integrated2D(Coeffs, pts)
+%everything is in pixel units here
+%origin of positions at the corner on the image 
+%(i.e. centers of pixels have half integer vox_size values)
+
+Imax = Coeffs(1); bg = Coeffs(2); sxy=Coeffs(3); xc=Coeffs(4); yc=Coeffs(5);
+
+gridSize = size(pts,2);
+r = pts( : , 1 : gridSize/2 );
+c = pts( : , gridSize/2 + 1 : gridSize );
+
+diffx1 =  (double(r-1)) - xc;
+diffx1 = diffx1 ./ ( sqrt(2) * sxy );
+diffx2 =  double(r) - xc;
+diffx2 = diffx2 ./ ( sqrt(2) * sxy );
+
+intensity1 = abs( erf( diffx1) - erf(diffx2) );
+
+diffy1 =  (double(c-1)) - yc;
+diffy1 = diffy1 ./ ( sqrt(2) * sxy );
+diffy2 =  double(c) - yc;
+diffy2 = diffy2 ./ ( sqrt(2) * sxy );
+
+intensity2 = abs( erf( diffy1) - erf(diffy2) );
+
+intensity = Imax.*intensity1.*intensity2;
+I = intensity / 4.0 + bg;
+
+end
+
+
+
+
+%% same as previous, but assumes bg is zero
+function I = gauss_integrated2D_no_bg(Coeffs, pts) 
+%everything is in pixel units here
+%origin of positions at the corner on the image 
+%(i.e. centers of pixels have half integer vox_size values)
+
+Imax = Coeffs(1); %bg = Coeffs(2);
+sxy=Coeffs(3); xc=Coeffs(4); yc=Coeffs(5); 
+
+gridSize = size(pts,2);
+r = pts( : , 1 : gridSize/2 );
+c = pts( : , gridSize/2 + 1 : gridSize );
+
+diffx1 =  (double(r-1)) - xc;
+diffx1 = diffx1 ./ ( sqrt(2) * sxy );
+diffx2 =  double(r) - xc;
+diffx2 = diffx2 ./ ( sqrt(2) * sxy );
+
+intensity1 = abs( erf( diffx1) - erf(diffx2) );
+
+diffy1 =  (double(c-1)) - yc;
+diffy1 = diffy1 ./ ( sqrt(2) * sxy );
+diffy2 =  double(c) - yc;
+diffy2 = diffy2 ./ ( sqrt(2) * sxy );
+
+intensity2 = abs( erf( diffy1) - erf(diffy2) );
+
+intensity = Imax.*intensity1.*intensity2;
+I = intensity / 4.0;
+
+end
