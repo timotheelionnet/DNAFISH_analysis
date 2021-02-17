@@ -1,0 +1,150 @@
+function [i1f,i2f,i3f,d12,d23,d13,indices] = register_3images(i1,i2,i3,fraction)
+% registers three 2d-images i1,i2 and i3. fraction is an integer that corresponds to the precision of the registration 
+%(in fraction of pixel) 
+
+%Outputs one subimage for each channel (i1f,i2f,i3f) that
+% corresponds to the maximal overlap bewteen the three channels
+%d12,d23 and d13 are the translation offsets between the three pairs of images in pixels
+
+%% tests
+if ndims(i1) ~= 2 || ndims(i2) ~= 2 || ndims(i3) ~= 2
+    disp('images should be 2D');
+    return
+end
+
+if size(i1,1) ~= size(i2,1) || size(i1,1) ~= size(i3,1) || size(i1,2) ~= size(i2,2) || size(i1,2) ~= size(i3,2)
+    disp('images have to be the same size');
+    return
+end
+
+verbose = 1;
+%% finding out the translation offsets
+out12 = dftregistration(fft2(double(i1)),fft2(double(i2)),fraction);
+%translation in x and y between two images
+d12 = [out12(3),out12(4)];
+clear('out12');
+out23 = dftregistration(fft2(double(i2)),fft2(double(i3)),fraction);
+%translation in x and y between two images
+d23 = [out23(3),out23(4)];
+clear('out12');
+out13 = dftregistration(fft2(double(i1)),fft2(double(i3)),fraction);
+%translation in x and y between two images
+d13 = [out13(3),out13(4)];
+clear('out12');
+
+
+%% generating the registered overlapping images
+%along the x axis
+if d12(1)>0 && d13(1) >0
+    if d12(1) > d13(1)
+        if verbose == 1, disp('case x1'); end
+        i1f = i1(1+round(d12(1)): size(i1,1),:);
+        indices(1,1,1) = 1+round(d12(1)); indices(2,1,1) = size(i1,1);
+        i2f = i2(1:size(i2,1)- round(d12(1)),:);
+        indices(1,1,2) = 1; indices(2,1,2) =size(i2,1)- round(d12(1));
+        i3f = i3(1+round(d12(1))-round(d13(1)): size(i3,1)-round(d13(1)),:);
+        indices(1,1,3) = 1+round(d12(1))-round(d13(1)); indices(2,1,3) =size(i3,1)-round(d13(1));
+    elseif d13(1) >= d12(1)
+        if verbose == 1, disp('case x2'); end
+        i1f = i1(1+round(d13(1)): size(i1,1),:);
+        indices(1,1,1) = 1+round(d13(1)); indices(2,1,1) = size(i1,1);
+        i3f = i3(1:size(i3,1)- round(d13(1)),:);
+        indices(1,1,2) = 1; indices(2,1,2) =size(i3,1)- round(d13(1));
+        i2f = i2(1+round(d13(1))-round(d12(1)): size(i2,1)-round(d12(1)),:);
+        indices(1,1,3) = 1+round(d13(1))-round(d12(1)); indices(2,1,3) =size(i2,1)-round(d12(1));
+    end
+elseif d12(1)>0 && d13(1) <=0
+    if verbose == 1, disp('case x3'); end
+    i3f = i3(1+round(d12(1))-round(d13(1)): size(i3,1),:);
+    indices(1,1,3) = 1+round(d12(1))-round(d13(1)); indices(2,1,3) = size(i3,1);
+    i1f = i1(1+round(d12(1)):size(i1,1)+ round(d13(1)),:);
+    indices(1,1,1) = 1+round(d12(1)); indices(2,1,1) = size(i1,1)+ round(d13(1));
+    i2f = i2(1: size(i2,1)-round(d12(1))+round(d13(1)),:);
+    indices(1,1,2) = 1;indices(2,1,2) = size(i2,1)-round(d12(1))+round(d13(1));
+elseif d12(1)<=0 && d13(1) >0
+    if verbose == 1, disp('case x4'); end
+    i2f = i2(1+round(d13(1))-round(d12(1)): size(i2,1),:);
+    indices(1,1,2) = 1+round(d13(1))-round(d12(1)); indices(2,1,2) = size(i2,1);
+    i1f = i1(1+round(d13(1)):size(i1,1)+ round(d12(1)),:);
+    indices(1,1,1) = 1+round(d13(1)); indices(2,1,1) = size(i1,1)+ round(d12(1));
+    i3f = i3(1: size(i3,1)-round(d13(1))+round(d12(1)),:);
+    indices(1,1,3) = 1; indices(2,1,3) = size(i3,1)-round(d13(1))+round(d12(1));
+elseif d12(1)<=0 && d13(1) <=0
+    if d12(1) > d13(1)
+        if verbose == 1, disp('case x5'); end
+        i3f = i3(1-round(d13(1)): size(i3,1),:);
+        indices(1,1,3) = 1-round(d13(1)); indices(2,1,3) = size(i3,1);
+        i1f = i1(1:size(i1,1)+ round(d13(1)),:);
+        indices(1,1,1) = 1; indices(2,1,1) = size(i1,1)+ round(d13(1));
+        i2f = i2(1-round(d12(1)):size(i1,1)-round(d12(1))+ round(d13(1)),:);
+        indices(1,1,2) = 1-round(d12(1)); indices(2,1,2) = size(i1,1)-round(d12(1))+ round(d13(1));
+    elseif d13(1) >= d12(1)
+        if verbose == 1, disp('case x6'); end
+        i2f = i2(1-round(d12(1)): size(i2,1),:);
+        indices(1,1,2) = 1-round(d12(1));indices(2,1,2) = size(i2,1);
+        i1f = i1(1:size(i2,1)+ round(d12(1)),:);
+        indices(1,1,1) = 1; indices(2,1,1) = size(i2,1)+ round(d12(1));
+        i3f = i3(1-round(d13(1)):size(i3,1)-round(d13(1))+ round(d12(1)),:);
+        indices(1,1,3) = 1-round(d13(1)); indices(2,1,3) = size(i3,1)-round(d13(1))+ round(d12(1));
+    end
+end
+
+%along the y axis
+if d12(2)>0 && d13(2) >0
+    if d12(2) > d13(2)
+        if verbose == 1, disp('case y1'); end
+        i1f = i1f(:,1+round(d12(2)): size(i1,2));
+        indices(1,2,1) = 1+round(d12(2)); indices(2,2,1) = size(i1,2);
+        i2f = i2f(:,1:size(i2,2)- round(d12(2)));
+        indices(1,2,2) = 1; indices(2,2,2) = size(i2,2)- round(d12(2));
+        i3f = i3f(:,1+round(d12(2))-round(d13(2)): size(i3,2)-round(d13(2)));
+        indices(1,2,3) = 1+round(d12(2))-round(d13(2)); indices(2,2,3) = size(i3,2)-round(d13(2));
+    elseif d13(2) >= d12(2)
+        if verbose == 1, disp('case y2'); end
+        i1f = i1f(:,1+round(d13(2)): size(i1,2));
+        indices(1,2,1) = 1+round(d13(2)); indices(2,2,1) = size(i1,2);
+        i3f = i3f(:,1:size(i3,2)- round(d13(2)));
+        indices(1,2,3) = 1; indices(2,2,3) = size(i3,2)- round(d13(2));
+        i2f = i2f(:,1+round(d13(2))-round(d12(2)): size(i2,2)-round(d12(2)));
+        indices(1,2,2) = 1+round(d13(2))-round(d12(2));indices(2,2,2) = size(i2,2)-round(d12(2));
+    end
+elseif d12(2)>0 && d13(2) <=0
+    if verbose == 1, disp('case y3'); end
+    i3f = i3f(:,1+round(d12(2))-round(d13(2)): size(i3,2));
+    indices(1,2,3) = 1+round(d12(2))-round(d13(2)); indices(2,2,3) = size(i3,2);
+    i1f = i1f(:,1+round(d12(2)):size(i1,2)+ round(d13(2)));
+    indices(1,2,1) = 1+round(d12(2)); indices(2,2,1) = size(i1,2)+ round(d13(2));
+    i2f = i2f(:,1: size(i2,2)-round(d12(2))+round(d13(2)));
+    indices(1,2,2) = 1; indices(2,2,2) = size(i2,2)-round(d12(2))+round(d13(2));
+elseif d12(2)<=0 && d13(2) >0
+    if verbose == 1, disp('case y4'); end
+    i2f = i2f(:,1+round(d13(2))-round(d12(2)): size(i2,2));
+    indices(1,2,2) = 1+round(d13(2))-round(d12(2)); indices(2,2,2) = size(i2,2);
+    i1f = i1f(:,1+round(d13(2)):size(i1,2)+ round(d12(2)));
+    indices(1,2,1) = 1+round(d13(2)); indices(2,2,1) = size(i1,2)+ round(d12(2));
+    i3f = i3f(:,1: size(i3,2)-round(d13(2))+round(d12(2)));
+    indices(1,2,3) = 1; indices(2,2,3) = size(i3,2)-round(d13(2))+round(d12(2));
+elseif d12(2)<=0 && d13(2) <=0
+    if d12(2) > d13(2)
+        if verbose == 1, disp('case y5'); end
+        i3f = i3f(:,1-round(d13(2)): size(i3,2));
+        indices(1,2,3) = 1-round(d13(2)); indices(2,2,3) = size(i3,2);
+        i1f = i1f(:,1:size(i1,2)+ round(d13(2)));
+        indices(1,2,1) = 1; indices(2,2,1) = size(i1,2)+ round(d13(2));
+        i2f = i2f(:,1-round(d12(2)):size(i1,2)-round(d12(2))+ round(d13(2)));
+        indices(1,2,2) = 1-round(d12(2)); indices(2,2,2) = size(i1,2)-round(d12(2))+ round(d13(2));
+    elseif d13(2) >= d12(2)
+        if verbose == 1, disp('case y6'); end
+        i2f = i2f(:,1-round(d12(2)): size(i2,2));
+        indices(1,2,2) = 1-round(d12(2)); indices(2,2,2) =  size(i2,2);
+        i1f = i1f(:,1:size(i2,2)+ round(d12(2)));
+        indices(1,2,1) = 1; indices(2,2,1) = size(i2,2)+ round(d12(2));
+        i3f = i3f(:,1-round(d13(2)):size(i3,2)-round(d13(2))+ round(d12(2)));
+        indices(1,2,3) = 1-round(d13(2)); indices(2,2,3) = size(i3,2)-round(d13(2))+ round(d12(2));
+    end
+end
+
+end
+
+
+

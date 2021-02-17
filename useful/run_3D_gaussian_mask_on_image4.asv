@@ -1,0 +1,66 @@
+function [final_spots,final_pix,rough_spots] = run_3D_gaussian_mask_on_image4(stack,p,rough_pix,rough_spots,i)
+
+    verbose = 1;
+
+%% variable initialization
+    nspots_rough = size(rough_pix,1);
+    [nx ny nz] = size(stack);
+
+    final_spots = zeros(nspots_rough,6);   % the coordinates output by the fine localization algorithm (in nm)
+    final_pix = zeros(nspots_rough,6);   % the coordinates output by the fine localization algorithm (in pix)
+    final_spots(1:nspots_rough,6)=i;
+
+    cutwidth = [ceil(p.cutsize*p.sigma_xy) ceil(p.cutsize*p.sigma_z)];    
+%--------------------------------------------------------------------------
+
+%% loop over each pre-detected spot
+    tic
+    for j=1:nspots_rough
+        
+        %progress update message
+        if(mod(j,100)==0 && verbose==1)
+            t = toc;
+            disp(['spot ',num2str(j),' out of ', num2str(nspots_rough), ' after ', num2str(t)]); 
+            tic
+        end
+        % generating a stack pl that interpolates the background around the spot.
+        [~,stack_bg_corr,xc,yc,zc,xmin,ymin,zmin] = ...
+            gen_3D_linear_interpol_clean_small2(stack,ceil(rough_pix(j,1)),ceil(rough_pix(j,2)),ceil(rough_pix(j,3)),cutwidth,p.thickness,'large');
+
+        % fine localization using the gaussian mask algorithm
+        [x0,y0,z0,N0,err0] = gaussian_3Dmask_small3(stack_bg_corr,xc,yc,zc,...
+            p.cutsize,p.sigma_xy,p.sigma_z,1,1,1,p.maxcount,p.tol);
+
+        %storing the results
+        final_spots(j,1)=(x0(1,size(x0,2))+(xmin-1))*p.dx;
+        final_spots(j,2)=(y0(1,size(y0,2))+(ymin-1))*p.dy;
+        final_spots(j,3)=(z0(1,size(z0,2))+(zmin-1))*p.dz;
+        final_spots(j,4)=N0(1,size(N0,2));
+        final_spots(j,5)=err0;
+        final_pix(j,1:6)=...
+            [final_spots(j,1),final_spots(j,2),final_spots(j,3),final_spots(j,4),final_spots(j,5),i];  
+        
+    end 
+    t = toc;
+ clear('stack','x0','y0','N0',...
+     'xc','yc','zc',...
+     'xmin','ymin','zmin',...
+     'stack_bg_corr','pl','cutwidth','rough_pix');
+%----------------------------------------------------------------------
+
+%% array cleanup
+%setting the arrays to the right size, ordering them by decreasing intensity and removing the potential double identifications
+    [final_spots,final_pix,rough_spots,n_wrong,n_double] = ...
+    clean_up_spots_array_3D_clean2(final_pix,rough_spots,[p.dx,p.dy,p.dz],nx,ny,nz,p.ROIsize);
+    nspots_found = size(final_spots,1);
+    
+    if verbose == 1
+        disp(['eliminated ' num2str(n_wrong) ' wrong / ' num2str(n_double) ' double identifications; there remain ',num2str(nspots_found),' spots on image ',num2str(i)]);
+    end
+    
+%----------------------------------------------------------------------
+
+%% housekeeping
+    clear('verbose','nspots_rough','nx','ny','nz','cutwidth','nspots_found','n_wrong','n_double','pl');
+    clear('stack','p','rough_pix','i','x0','y0','N0','tolerance');
+end

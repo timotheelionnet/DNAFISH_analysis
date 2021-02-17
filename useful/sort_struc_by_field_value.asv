@@ -1,0 +1,8 @@
+function struc2 = sort_struc_by_field_value(struc1,fieldstring)
+nsize = size(struc1,1)
+
+struc2 = [struc1.fieldstring];
+
+
+
+end

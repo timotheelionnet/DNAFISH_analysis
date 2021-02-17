@@ -1,0 +1,49 @@
+function [final_spots, final_pix, rough_spots] = run_2D_gaussian_fit_on_image2(stack,p,rough_pix,rough_spots,i)
+
+    %option
+    verbose = 1;
+
+%% variable initialization
+    nspots_rough = size(rough_pix,1);
+    [nx ny] = size(stack);
+
+    final_spots = zeros(nspots_rough,6);   % the coordinates output by the fine localization algorithm (in nm)
+    final_pix = zeros(nspots_rough,6);   % the coordinates output by the fine localization algorithm (in pix)
+    final_spots(1:nspots_rough,6)=i;
+    
+%% loop over each pre-detected spot    
+    for j=1:nspots_rough
+        %progress update message
+        if(mod(j,100)==0 && verbose==1), disp(['spot ',num2str(j),' out of ' num2str(nspots_rough)]); end
+
+        %fine localization using the gaussian fit 
+        xp = ceil(rough_pix(j,1)); yp = ceil(rough_pix(j,2)); 
+        Gaussout = gaussian_2D_fit_local(stack,xp,yp,p);
+        % Gaussout= [Imax,bg,sxy,xc,yc];
+        %storing the results
+        final_spots(j,1)=Gaussout(4)*p.dx;  %xc
+        final_spots(j,2)=Gaussout(5)*p.dy;  %yc
+        final_spots(j,3)=Gaussout(1)*pi; %I normalized so that the value is the integrated number of photons 
+        %rather than the prefactor in front of the 2D gaussian
+        final_spots(j,4)=Gaussout(3)*p.dx; %sxy
+        final_spots(j,5)=Gaussout(2); %background
+        final_pix(j,1:6)=...
+            [final_spots(j,1)/p.dx,final_spots(j,2)/p.dy,final_spots(j,3),...
+            final_spots(j,4)/p.dx,final_spots(j,5),i];    
+    end 
+
+%% array cleanup
+%setting the arrays to the right size, ordering them by decreasing intensity and removing the potential double identifications
+    [final_spots,final_pix,rough_spots,n_wrong,n_double] = ...
+    clean_up_spots_array_2D_clean2(final_pix,rough_spots,[p.dx,p.dy],nx,ny,p.ROIsize); 
+
+    nspots_found = size(final_spots,1);
+    
+    if verbose == 1
+        disp(['eliminated ' num2str(n_wrong) ' wrong / ' num2str(n_double) ' double identifications; there remain ',num2str(nspots_found),' spots on image ',num2str(i)]);
+    end
+
+%% housekeeping
+    clear('verbose','nspots_rough','nx','ny','nz','xp','yp','zp','cutwidth','nspots_found','n_wrong','n_double','stack2','pl');
+    clear('stack','Gaussout','p','rough_pix','i','x0','y0','N0');
+end

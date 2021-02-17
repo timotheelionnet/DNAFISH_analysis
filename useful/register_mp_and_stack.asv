@@ -1,0 +1,36 @@
+function register_mp_and_stack
+
+dir = 'D:\fish\2010-03-30\Actb800-1200andExonCy3_IntronCy35_MS2Cy5\c006GFP24\';
+
+i1 = 'mp3.tif';
+i2 = 'mp35.tif';
+i3 = 'mp5.tif';
+
+f1 = 'mp3reg.tif';
+f2 = 'mp35reg.tif';
+f3 = 'mp5reg.tif';
+
+st1 = 'st3.tif';
+st2 = 'st35.tif';
+st3 = 'st5.tif';
+
+st1f = 'st3reg.tif';
+st2f = 'st35reg.tif';
+st3f = 'st5reg.tif';
+
+
+mp1 = timtiffread([dir,i1]);
+mp2 = timtiffread([dir,i2]);
+mp3 = timtiffread([dir,i3]);
+
+[mp1f,mp2f,mp3f,d12,d23,d13,indices] = register_3images(mp1,mp2,mp3,fraction);
+
+save_as_tiff(mp1f,[dir,f1]);
+save_as_tiff(mp2f,[dir,f2]);
+save_as_tiff(mp3f,[dir,f3]);
+
+st1 = timtiffread([dir,st1]);
+st1f = st1(indices(1,1,1):indices(2,1,1),indices(1,1,1):indices(2,1));
+
+
+end

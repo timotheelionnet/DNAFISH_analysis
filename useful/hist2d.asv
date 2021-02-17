@@ -1,0 +1,36 @@
+function [resx,resy,resz] =  hist2d(data,xbin,ybin)
+%data should be a 2 column matrix: [datax,datay]
+%xbin is the size of the bin along x (scalar)
+%ybin is the size of the bin along y (scalar)
+
+% convention: integer bin value n*bin is included in the bin centered at (n+0.5)*bin
+
+
+
+if max(size(xbin)) == 1 && max(size(ybin)) == 1
+    nx = floor(max(data(:,1))/xbin)-floor(min(data(:,1))/xbin)+1;
+    ny = floor(max(data(:,2))/ybin)-floor(min(data(:,2))/ybin)+1;
+    
+    if nx <1 || ny <1
+        disp('wrong bin size: less than one bin in the resulting histogram');
+        return;
+    end
+
+    minxbin =floor(min(data(:,1))/xbin);
+    minybin =floor(min(data(:,2))/ybin);
+    
+    [resx,resy] = meshgrid( (minxbin+0.5)*xbin : xbin : (minxbin+nx-0.5)*xbin , ...
+        ( minybin+0.5)*ybin : ybin : (minybin+ny-0.5)*ybin );
+end
+
+resz = zeros(ny,nx);
+
+
+for i=1:size(data,1)
+    nxi = floor(data(i,1)/xbin)-minxbin;
+    nyi = floor(data(i,2)/ybin)-minybin;
+    resz(nyi+1,nxi+1) = resz(nyi,nxi)+1;
+     
+end
+
+end

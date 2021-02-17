@@ -1,0 +1,27 @@
+function save_as_tiff(img,filename,normalize)
+%normalize sets the max intensity to be 65536
+%otherwise converting the image to int16 format
+
+if ndims(img) == 2
+    %% 2d img
+    if(normalize==1)
+        img = (img-min(min(img)))/max(max(img))*65536;
+    end
+    img = uint16(img);
+
+    imwrite(img,filename,'Compression','none');
+    return
+    
+elseif ndims(img) == 3
+    %% 3d stack 
+    if(normalize==1)
+        img = (img-min(min(min(img))))/max(max(max(img)))*65536;
+    end
+    img = uint16(img);
+
+    imwrite(img,filename,'Compression','none');
+    return
+    
+end
+
+end

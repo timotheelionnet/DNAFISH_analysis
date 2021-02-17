@@ -1,0 +1,11 @@
+function [i1f,i2f,i3f,d12,d23,d13] = register_3images(i1,i2,i3,fraction)
+
+out12 = dftregistration(fft2(i1),fft2(i2),fraction);
+d12 = [out12(3),out12(4)];
+out23 = dftregistration(fft2(i2),fft2(i3),fraction);
+d23 = [out23(3),out23(4)];
+out13 = dftregistration(fft2(i1),fft2(i3),fraction);
+d13 = [out13(3),out13(4)];
+
+
+end
