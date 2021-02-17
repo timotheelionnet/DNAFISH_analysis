@@ -15,4 +15,4 @@ Input cropped loci images, compute centroid locations, radio of gyrations, and v
 plotPDF02032021.m  
 Input data, plot PDF and CDF. *Testing  
   
-*fileset is too big for uploading
+*fileset, useful, and AIIRLOCALIZE1_stable is too big for uploading
