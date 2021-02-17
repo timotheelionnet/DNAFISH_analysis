@@ -102,11 +102,11 @@ for i=1:numel(params.channelDescription.fishChannelList)
     
         %loop through loci and calculate Rg
         r = [];
-        for j = 1:length(cen(:,1))
+        for k = 1:length(cen(:,1))
         
             %load cropped image
             locus = readTifStackWithImRead(fullfile(CropFolder,...
-                ['locus_bgcorr',add_digits(j,nDigitsMax1),'.tif']));
+                ['locus_bgcorr',add_digits(k,nDigitsMax1),'.tif']));
         
             %generate meshgrid if not already exist
             try
@@ -117,7 +117,7 @@ for i=1:numel(params.channelDescription.fishChannelList)
             end
         
             %centroid coordinate
-            cen0 = cen(j,:);
+            cen0 = cen(k,:);
             xc = cen0(1);
             yc = cen0(2);
             zc = cen0(3);
@@ -165,10 +165,10 @@ for i=1:numel(params.channelDescription.fishChannelList)
     
         %loop through loci and calculate volumn
         count = [];
-        for j = 1:length(loc(:,1))
+        for k = 1:length(loc(:,1))
             %load cropped image
             locus = readTifStackWithImRead(fullfile(CropFolder,...
-                ['locus_bgcorr',add_digits(j,nDigitsMax1),'.tif']));
+                ['locus_bgcorr',add_digits(k,nDigitsMax1),'.tif']));
         
             %count number of pixel above threshold
             idx = find(locus > params.Settings.threshold);
