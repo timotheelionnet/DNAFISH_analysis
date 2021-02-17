@@ -1,0 +1,554 @@
+function varargout = view_stack_col(varargin)
+% VIEW_STACK If you need help call 911 .
+% Timothee lionnet december 6, 2008
+
+%one argument: one color channel (data)
+%two arguments: the first one is the data (green channel)
+%the second one is the overlay (red channel) - typically the position of
+%the spots located by some detection algorithm
+%three arguments: the first one is the data (green channel)
+%the second one is the overlay (red channel) - typically the position of
+%the spots located by some detection algorithm
+%the third one is a string specifying the shape of the object locating the spots in the overlay channel
+
+%position of x and y of the pointer when I freeze the xy browsing
+global nx ny nz xfreeze yfreeze
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% parsing arguments %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%checking that we have at least one 3D stack. this is the data (green channel)
+stack1 = varargin{1};
+stack1 = double(stack1); 
+if ndims(stack1) ~= 3 || size(stack1,3)==1
+    fprintf('I like my arguments to be 3 dimensional, babe.\n');
+    return;
+end
+[nx ny nz] = size(stack1);
+xfreeze = round(nx/2); yfreeze = round(ny/2); 
+stack1name = inputname(1);
+
+[fh,ha,penseedujour,hclose,...
+    xh,yh,zh,hxplot_title,hyplot_title,hzplot_title,hxplot_size_txt,hyplot_size_txt,hzplot_size_txt,...
+    hxplot_range,hyplot_range,hzplot_range,zoomh,hzoom_title,hzoom_width,...
+    ph,hslice_title,hslice_Imin_Info_title,hslice_Imed_Info_title,hslice_Imax_Info_title,hslice_Isd_Info_title,...
+    hslice_Imin_Info_val,hslice_Imed_Info_val,hslice_Imax_Info_val,hslice_Isd_Info_val,...
+    hglobal_Imin_Info_title,hglobal_Imed_Info_title,hglobal_Imax_Info_title,hglobal_Isd_Info_title,...
+    hglobal_Imin_Info_val,hglobal_Imed_Info_val,hglobal_Imax_Info_val,hglobal_Isd_Info_val,...
+    hItitle,hIval,hglobal_title,...
+    hslice_auto,hglob_auto,hImintitle,hImin,hImaxtitle,hImax,...
+    hstate,hxtitle,hytitle,hxpos,hypos,hzpos,zslider,...
+    hgauss_title,h_x0_title,h_x0,h_y0_title,h_y0,h_z0_title,h_z0,...
+    h_I0_title,h_I0,h_bg0_title,h_bg0,...
+    h_sxy0_title,h_sxy0,h_sz0_title,h_sz0] = set_figure_and_panel_for_view_stack_col(stack1,stack1name);
+
+                
+%%%%%%%%%%%%%%%%%%%%%%%%%%% set all the callback functions %%%%%%%%%%%%%%%%%            
+set(fh,'WindowButtonMotionFcn', {@viewlocaldata,stack1,hxpos,hypos,...
+                    hIval,zslider,hImin,hImax,xh,hxplot_range,...
+                    yh,hyplot_range,zh,hzplot_range,hzoom_width,zoomh,ha,hstate});
+set(fh,'WindowButtonUpFcn', {@change_state,hstate,ha});   
+set(hclose,'Callback', {@clean_close,fh});   
+set(zslider,'Callback',{@slider_change,hzpos,hIval,stack1,hImin,hImax,...
+            hslice_Imin_Info_val,hslice_Imed_Info_val,hslice_Imax_Info_val,hslice_Isd_Info_val,ha,fh,...
+            xh,yh,zh,zoomh,hxplot_range,hyplot_range,hzplot_range,hzoom_width,hstate});
+set(hzpos,'Callback',{@zpos_change,nz,zslider,hIval,stack1,hImin,hImax,...
+            hslice_Imin_Info_val,hslice_Imed_Info_val,hslice_Imax_Info_val,hslice_Isd_Info_val,ha,fh,...
+            xh,yh,zh,zoomh,hxplot_range,hyplot_range,hzplot_range,hzoom_width,hstate});            
+set(hImin,'Callback',{@change_Iminmax,zslider,stack1,hImin,hImax,ha,fh,hzoom_width,hstate,zoomh});
+set(hImax,'Callback',{@change_Iminmax,zslider,stack1,hImin,hImax,ha,fh,hzoom_width,hstate,zoomh});
+set(hslice_auto,'Callback',{@slice_auto_adjust,zslider,stack1,hImin,hImax,ha,fh,hzoom_width,hstate,zoomh});
+set(hglob_auto,'Callback',{@global_auto_adjust,zslider,stack1,hImin,hImax,ha,fh,hzoom_width,hstate,zoomh});
+set(hgauss_title,'Callback',{@local_3D_gaussian_fit_from_viewer,fh,hImin,hImax,xh,yh,zh,zoomh,...
+    hxplot_range,hyplot_range,hzplot_range,hzoom_width,hzpos,stack1,h_x0,h_y0,h_z0,h_I0,h_bg0,h_sxy0,h_sz0});
+
+set(fh,'SelectionType','alt');
+
+plot_current_z_stack_single_channel(fh,ha,hImin,hImax,stack1,1);
+set(fh,'Visible','on');
+
+uiwait;
+clear('nx','ny','nz','stack1','stack1name','xfreeze','yfreeze');
+clear('fh','ha','penseedujour','hclose',...
+    'xh','yh','zh','hxplot_title','hyplot_title','hzplot_title','hxplot_size_txt','hyplot_size_txt','hzplot_size_txt',...
+    'hxplot_range','hyplot_range','hzplot_range','zoomh','hzoom_title','hzoom_width',...
+    'ph','hslice_title','hslice_Imin_Info_title','hslice_Imed_Info_title','hslice_Imax_Info_title','hslice_Isd_Info_title',...
+    'hslice_Imin_Info_val','hslice_Imed_Info_val','hslice_Imax_Info_val','hslice_Isd_Info_val',...
+    'hglobal_Imin_Info_title','hglobal_Imed_Info_title','hglobal_Imax_Info_title','hglobal_Isd_Info_title',...
+    'hglobal_Imin_Info_val','hglobal_Imed_Info_val','hglobal_Imax_Info_val','hglobal_Isd_Info_val',...
+    'hItitle','hIval','hglobal_title',...
+    'hslice_auto','hglob_auto','hImintitle','hImin','hImaxtitle','hImax',...
+    'hstate','hxtitle','hytitle','hxpos','hypos','hzpos','zslider',...
+    'hgauss_title','h_x0_title','h_x0','h_y0_title','h_y0','h_z0_title','h_z0',...
+    'h_I0_title','h_I0','h_bg0_title','h_bg0',...
+    'h_sxy0_title','h_sxy0','h_sz0_title','h_sz0');
+
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% Callback functions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function clean_close(src,eventdata,fh)
+close(fh);
+clear('src','eventdata','fh');
+end
+
+function local_3D_gaussian_fit_from_viewer(src,eventdata,fh,hImin,hImax,xh,yh,zh,zoomh,hxplot_range,hyplot_range,hzplot_range,hzoom_width,...
+    hzpos,stack1,h_x0,h_y0,h_z0,h_I0,h_bg0,h_sxy0,h_sz0)
+
+    global xfreeze yfreeze
+    p = 0;
+    
+    z = str2num(get(hzpos,'String'));
+    z = round(z);
+    
+    [Gaussout, resnorm]=gaussian_3D_fit_local(stack1,xfreeze,yfreeze,z,p);
+    
+    set(h_I0,'String',num2str(Gaussout(1)));
+    set(h_bg0,'String',num2str(Gaussout(2)));
+    set(h_sxy0,'String',num2str(Gaussout(3)));
+    set(h_sz0,'String',num2str(Gaussout(4)));
+    set(h_x0,'String',num2str(Gaussout(5)));
+    set(h_y0,'String',num2str(Gaussout(6)));
+    set(h_z0,'String',num2str(Gaussout(7)));
+    
+    plot_local_data_and_fit_single_channel(xfreeze,yfreeze,z,fh,hImin,hImax,xh,yh,zh,zoomh,...
+    stack1,hxplot_range,hyplot_range,hzplot_range,hzoom_width,Gaussout);
+    clear('xfreeze','yfreeze','z','p','Gaussout','resnorm');
+    clear('src','eventdata','hzpos','stack1','h_x0','h_y0','h_z0','h_I0','h_bg0','h_sxy0','h_sz0');
+end
+
+
+function change_state(src,eventdata,hstate,ha)
+    %switches between the snap and grab mode
+    %hstate value = 1: grab
+    %hstate value = 2: snap
+    global xfreeze yfreeze nx ny
+    
+    val = get(hstate,'Value');
+    val = 3-val; %1->2 or 2->1
+    set(hstate,'Value',val);
+    
+    if val == 2   %if switching to snap state
+        set(src,'CurrentAxes',ha);
+        point = get(gca,'CurrentPoint');
+        yfreeze = round(point(1,1));    %note the inverse convention for mouse and array (xy -> yx)
+        xfreeze = round(point(1,2));
+        xfreeze = max(1,min(xfreeze,nx));
+        yfreeze = max(1,min(yfreeze,ny));
+        
+    end
+    clear('point','val','point','xfreeze','yfreeze');
+    clear('src','eventdata','hstate','ha','nx','ny');
+end
+
+function slider_change(zslider,eventdata,hzpos,hIval,stack1,hImin,hImax,...
+    hslice_Imin_Info_val,hslice_Imed_Info_val,hslice_Imax_Info_val,hslice_Isd_Info_val,ha,fh,...
+    xh,yh,zh,zoomh,hxplot_range,hyplot_range,hzplot_range,hzoom_width,hstate)
+    
+    global nx ny xfreeze yfreeze
+    
+    %updating the z-slider and the z info window
+    z = get(zslider,'Value');
+    z = round(z);
+    set(zslider,'Value',z);
+    set(hzpos,'String',num2str(z));
+    
+    %updating the Imin/Imax info
+    temp = reshape(stack1(1:nx,1:ny,z),1,nx*ny);
+    curImin = min(temp); curImax = max(temp); curImed = median(temp); curIsd = std(temp);
+    clear('temp');
+    set(hslice_Imin_Info_val,'String',num2str(curImin));
+    set(hslice_Imed_Info_val,'String',num2str(curImed));
+    set(hslice_Imax_Info_val,'String',num2str(curImax)); 
+    set(hslice_Isd_Info_val,'String',num2str(curIsd)); 
+    
+    %replotting the local data (zoom + axial views)
+    [x,y] = get_current_pointer_position(fh,ha,hstate); %I get the current (x,y) of the mouse
+    
+    Int = stack1(x,y,z);
+    set(hIval,'String',num2str(Int));
+
+    plot_local_data_single_channel(x,y,z,fh,hImin,hImax,xh,yh,zh,zoomh,...
+        stack1,hxplot_range,hyplot_range,hzplot_range,hzoom_width);
+    
+    %replotting the main window
+    plot_current_z_stack_single_channel(fh,ha,hImin,hImax,stack1,z);  
+    
+    clear('x','y','z','Int','curImin','curImax','curImed','curIsd');
+    clear('nx','ny','xfreeze','yfreeze');
+    clear('zslider','eventdata','hzpos','hIval','stack1','hImin','hImax',...
+    'hslice_Imin_Info_val','slice_Imed_Info_val','hslice_Imax_Info_val','hslice_Isd_Info_val','ha','fh',...
+    'xh','yh','zh','zoomh','hxplot_range','hyplot_range','hzplot_range','hzoom_width','hstate');
+end
+
+function zpos_change(hzpos,eventdata,nz,zslider,hIval,stack1,hImin,hImax,...
+    hslice_Imin_Info_val,hslice_Imed_Info_val,hslice_Imax_Info_val,hslice_Isd_Info_val,ha,fh,...
+    xh,yh,zh,zoomh,hxplot_range,hyplot_range,hzplot_range,hzoom_width,hstate)
+
+    global nx ny xfreeze yfreeze
+
+    %updating the z-slider and the z info window
+    z = str2num(get(hzpos,'String'));
+    z = round(z);
+    z = max(min(z,nz) , 1);
+    set(hzpos,'String',num2str(z));
+    set(zslider,'Value',z);
+    
+    %updating the Imin/Imax info
+    temp = reshape(stack1(1:nx,1:ny,2),1,nx*ny);
+    curImin = min(temp); curImax = max(temp); curImed = median(temp); curIsd = std(temp);
+    clear('temp');
+    set(hslice_Imin_Info_val,'String',num2str(curImin));
+    set(hslice_Imed_Info_val,'String',num2str(curImed));
+    set(hslice_Imax_Info_val,'String',num2str(curImax));
+    set(hslice_Isd_Info_val,'String',num2str(curIsd)); 
+    
+    %replotting the main window
+    plot_current_z_stack_single_channel(fh,ha,hImin,hImax,stack1,z);
+    
+    %replotting the local data (zoom + axial views)
+    [x,y] = get_current_pointer_position(fh,ha,hstate); %I get the current (x,y) of the mouse
+    Int = stack1(x,y,z);
+    set(hIval,'String',num2str(Int));
+
+    plot_local_data_single_channel(x,y,z,fh,hImin,hImax,xh,yh,zh,zoomh,...
+        stack1,hxplot_range,hyplot_range,hzplot_range,hzoom_width);
+    
+    clear('x','y','z','Int','curImin','curImax','curImed','curIsd'); 
+    clear('nx','ny','xfreeze','yfreeze');
+    clear('hzpos','eventdata','nz','zslider','hIval','stack1','hImin','hImax',...
+    'hslice_Imin_Info_val','hslice_Imed_Info_val','hslice_Imax_Info_val','hslice_Isd_Info_val','ha','fh',...
+    'xh','yh','zh','zoomh','hxplot_range','hyplot_range','hzplot_range','hzoom_width','hstate');
+end
+
+function change_Iminmax(hObj,eventdata,zslider,stack1,hImin,hImax,ha,fh,hzoom_width,hstate,zoomh)
+    
+    z = get(zslider,'Value');
+    
+    %replotting the main window
+    plot_current_z_stack_single_channel(fh,ha,hImin,hImax,stack1,z);
+    
+    %replotting the zoom window
+    zoomwidth = str2num(get(hzoom_width,'String'));
+    [x,y] = get_current_pointer_position(fh,ha,hstate); %I get the current (x,y) of the mouse
+    plot_zoom_single_channel(x,y,z,zoomwidth,zoomh,stack1,fh,hImin,hImax);
+    
+    clear('x','y','z','zoomwidth');
+    clear('hObj','eventdata','zslider','stack1','hImin','hImax','ha','fh','hzoom_width','hstate','zoomh');
+end
+
+function slice_auto_adjust(hslice_auto,eventdata,zslider,stack1,hImin,hImax,ha,fh,hzoom_width,hstate,zoomh)
+    
+    z = get(zslider,'Value');
+    
+    %updating Imin / Imax info
+    Imin = min(min(stack1(:,:,z))); Imax = max(max(stack1(:,:,z)));
+    set(hImin,'String',num2str(Imin)); set(hImax,'String',num2str(Imax));
+    
+    %replotting the main window
+    plot_current_z_stack_single_channel(fh,ha,hImin,hImax,stack1,z);
+    
+    %replotting the zoom window
+    zoomwidth = str2num(get(hzoom_width,'String'));
+    [x,y] = get_current_pointer_position(fh,ha,hstate); %I get the current (x,y) of the mouse
+    
+    plot_zoom_single_channel(x,y,z,zoomwidth,zoomh,stack1,fh,hImin,hImax);
+    clear('x','y','z','zoomwidth','Imin','Imax');
+    clear('hslice_auto','eventdata','zslider','stack1','hImin','hImax','ha','fh','hzoom_width','hstate','zoomh');
+end
+
+function global_auto_adjust(hglob_auto,eventdata,zslider,stack1,hImin,hImax,ha,fh,hzoom_width,hstate,zoomh)
+    z = get(zslider,'Value');
+    
+    %updating the Imin/Imax info
+    Imin = min(min(min(stack1))); Imax = max(max(max(stack1)));
+    set(hImin,'String',num2str(Imin)); set(hImax,'String',num2str(Imax));
+    
+    %replotting the main window
+    plot_current_z_stack_single_channel(fh,ha,hImin,hImax,stack1,z);
+    
+    %replotting the zoom window
+    zoomwidth = str2num(get(hzoom_width,'String'));
+    [x,y] = get_current_pointer_position(fh,ha,hstate); %I get the current (x,y) of the mouse
+    
+    plot_zoom_single_channel(x,y,z,zoomwidth,zoomh,stack1,fh,hImin,hImax);
+    
+    clear('x','y','z','zoomwidth','Imin','Imax');
+    clear('hglob_auto','eventdata','zslider','stack1','hImin','hImax','ha','fh','hzoom_width','hstate,zoomh');
+end
+
+function viewlocaldata(src,eventdata,stack1,hxpos,hypos,hIval,zslider,hImin,hImax,...
+    xh,hxplot_range,yh,hyplot_range,zh,hzplot_range,hzoom_width,zoomh,ha,hstate)
+    
+    global nx ny
+    val = get(hstate,'Value');          %this is the snap/grab mode
+    
+    %I replot things only if the grab mode is active
+    if val == 1 
+
+        %I get the current (x,y,z) 
+        [x,y] = get_current_pointer_position(src,ha,hstate); 
+        z = get(zslider,'Value');
+        z = round(z);
+
+        %I update the current display of the pointer info
+        set(hxpos,'String',num2str(x));
+        set(hypos,'String',num2str(y));
+
+        if(x>=1 && y >=1 && x <= nx && y <= ny)
+            Int = stack1(x,y,z);
+            set(hIval,'String',num2str(Int));
+
+            %plotting the profiles and zoom window
+            plot_local_data_single_channel(x,y,z,src,hImin,hImax,xh,yh,zh,zoomh,...
+            stack1,hxplot_range,hyplot_range,hzplot_range,hzoom_width);
+        end
+    end
+    clear('x','y','z','val','Int','nx','ny');
+    clear('src','eventdata','stack1','hxpos','hypos','hIval','zslider','hImin','hImax',...
+    'xh','hxplot_range','yh','hyplot_range','zh','hzplot_range','hzoom_width','zoomh','ha','hstate');
+end
+
+function plot_local_data_single_channel(x,y,z,fh,hImin,hImax,xh,yh,zh,zoomh,...
+    stack1,hxplot_range,hyplot_range,hzplot_range,hzoom_width)
+    
+    xrange = str2num(get(hxplot_range,'String'));
+    yrange = str2num(get(hyplot_range,'String'));
+    zrange = str2num(get(hzplot_range,'String'));
+    zoomwidth = str2num(get(hzoom_width,'String'));
+
+    %plotting the profiles and zoom window
+    plot_xprofile(x,y,z,xrange,stack1,xh,fh);
+    plot_yprofile(x,y,z,yrange,stack1,yh,fh);
+    plot_zprofile(x,y,z,zrange,stack1,zh,fh);
+    plot_zoom_single_channel(x,y,z,zoomwidth,zoomh,stack1,fh,hImin,hImax);
+    
+    clear('xrange','yrange','zrange','zoomwidth');
+    clear('x','y','z','fh','hImin','hImax','xh','yh','zh','zoomh',...
+    'stack1','hxplot_range','hyplot_range','hzplot_range','hzoom_width');
+end
+
+function plot_local_data_and_fit_single_channel(x,y,z,fh,hImin,hImax,xh,yh,zh,zoomh,...
+    stack1,hxplot_range,hyplot_range,hzplot_range,hzoom_width,Gaussout)
+    
+    xrange = str2num(get(hxplot_range,'String'));
+    yrange = str2num(get(hyplot_range,'String'));
+    zrange = str2num(get(hzplot_range,'String'));
+    zoomwidth = str2num(get(hzoom_width,'String'));
+
+    %plotting the profiles and zoom window
+    plot_xprofile_and_fit(x,y,z,xrange,stack1,xh,fh,Gaussout);
+    %plot_yprofile_and_fit(x,y,z,yrange,stack1,yh,fh,Gaussout);
+    %plot_zprofile_and_fit(x,y,z,zrange,stack1,zh,fh,Gaussout);
+    plot_zoom_single_channel(x,y,z,zoomwidth,zoomh,stack1,fh,hImin,hImax);
+    
+    clear('xrange','yrange','zrange','zoomwidth');
+    clear('x','y','z','fh','hImin','hImax','xh','yh','zh','zoomh',...
+    'stack1','hxplot_range','hyplot_range','hzplot_range','hzoom_width');
+end
+
+function plot_xprofile_and_fit(xarr,yarr,z,xrange,stack1,xh,fh,Gaussout)
+
+nx = size(stack1,1);
+xprofile(1:nx) = stack1(1:nx,yarr,z);
+pos = (1:nx)';
+pos(:,2) = yarr;
+pos(:,3) = z;
+pos = pos - 0.5;
+xfit = gauss_integrated3D_position_list(Gaussout, pos);
+if 2*xrange+1>nx
+        set(fh,'CurrentAxes',xh);
+        Imin = min(xprofile(1:nx));
+        Imax = max(xprofile(1:nx));
+        plot(1:nx,xprofile(1:nx),[xarr xarr],[Imin Imax]); hold;
+        plot(1:nx,xfit(1:nx),'r',[xarr xarr],[Imin Imax]); hold;        
+elseif (xarr - xrange >= 1) && (xarr + xrange <= nx)
+        set(fh,'CurrentAxes',xh);
+        Imin = min(xprofile(xarr-xrange:xarr+xrange));
+        Imax = max(xprofile(xarr-xrange:xarr+xrange));
+        plot(xarr-xrange:xarr+xrange,xprofile(xarr-xrange:xarr+xrange),...
+            [xarr xarr],[Imin Imax]); hold;
+        plot(xarr-xrange:xarr+xrange,xfit(xarr-xrange:xarr+xrange),'r',...
+            [xarr xarr],[Imin Imax]); hold;
+elseif xarr - xrange < 1 && xarr + xrange <= nx 
+        set(fh,'CurrentAxes',xh);
+        x = xrange+1;
+        Imin = min(xprofile(x-xrange:x+xrange));
+        Imax = max(xprofile(x-xrange:x+xrange));
+        plot(x-xrange:x+xrange,xprofile(x-xrange:x+xrange),...
+            [xarr xarr],[Imin Imax]); hold;
+        plot(x-xrange:x+xrange,xfit(x-xrange:x+xrange),'r',...
+            [xarr xarr],[Imin Imax]); hold;        
+elseif xarr + xrange > nx && xarr - xrange >= 1
+        set(fh,'CurrentAxes',xh);
+        x = nx-xrange;
+        Imin = min(xprofile(x-xrange:x+xrange));
+        Imax = max(xprofile(x-xrange:x+xrange));
+        plot(x-xrange:x+xrange,xprofile(x-xrange:x+xrange),...
+            [xarr xarr],[Imin Imax]); 
+        plot(x-xrange:x+xrange,xfit(x-xrange:x+xrange),'r',...
+            [xarr xarr],[Imin Imax]); 
+end 
+clear('nx','xprofile','Imin','Imax','x');
+clear('xarr','yarr','z','xrange','stack1','xh','fh');
+end
+
+function [xarr yarr] = get_current_pointer_position(fh,ha,hstate)
+
+global xfreeze yfreeze nx ny 
+
+val = get(hstate,'Value');%this is the snap/grab mode for the local data panel
+
+if val == 1         %if grab mode is activated, I replot the local data at some arbitrary location
+        set(fh,'CurrentAxes',ha);
+        point = get(gca,'CurrentPoint');
+        xpic = round(point(1,1));   ypic = round(point(1,2));
+        xarr = ypic;    yarr = xpic;    %pic and array have different xy conventions
+        xarr = max(xarr,1);  xarr = min(xarr,nx);
+        yarr = max(yarr,1);  yarr = min(yarr,ny);
+else
+        xarr = xfreeze; yarr = yfreeze;
+end
+
+clear('xfreeze','yfreeze','nx','ny','xpic','ypic','val');
+clear('fh','ha','hstate');
+end
+
+function plot_xprofile(xarr,yarr,z,xrange,stack1,xh,fh)
+
+nx = size(stack1,1);
+xprofile(1:nx) = stack1(1:nx,yarr,z);
+
+if 2*xrange+1>nx
+        set(fh,'CurrentAxes',xh);
+        Imin = min(xprofile(1:nx));
+        Imax = max(xprofile(1:nx));
+        plot(1:nx,xprofile(1:nx),[xarr xarr],[Imin Imax]); 
+elseif (xarr - xrange >= 1) && (xarr + xrange <= nx)
+        set(fh,'CurrentAxes',xh);
+        Imin = min(xprofile(xarr-xrange:xarr+xrange));
+        Imax = max(xprofile(xarr-xrange:xarr+xrange));
+        plot(xarr-xrange:xarr+xrange,xprofile(xarr-xrange:xarr+xrange),...
+            [xarr xarr],[Imin Imax]);
+elseif xarr - xrange < 1 && xarr + xrange <= nx 
+        set(fh,'CurrentAxes',xh);
+        x = xrange+1;
+        Imin = min(xprofile(x-xrange:x+xrange));
+        Imax = max(xprofile(x-xrange:x+xrange));
+        plot(x-xrange:x+xrange,xprofile(x-xrange:x+xrange),...
+            [xarr xarr],[Imin Imax]);
+elseif xarr + xrange > nx && xarr - xrange >= 1
+        set(fh,'CurrentAxes',xh);
+        x = nx-xrange;
+        Imin = min(xprofile(x-xrange:x+xrange));
+        Imax = max(xprofile(x-xrange:x+xrange));
+        plot(x-xrange:x+xrange,xprofile(x-xrange:x+xrange),...
+            [xarr xarr],[Imin Imax]);   
+end 
+clear('nx','xprofile','Imin','Imax','x');
+clear('xarr','yarr','z','xrange','stack1','xh','fh');
+end
+
+function plot_yprofile(xarr,yarr,z,yrange,stack1,yh,fh)
+
+ny = size(stack1,2);
+yprofile(1:ny) = stack1(xarr,1:ny,z);
+
+if 2*yrange+1>ny
+        set(fh,'CurrentAxes',yh);
+        Imin = min(yprofile(1:ny));
+        Imax = max(yprofile(1:ny));
+        plot(1:ny,yprofile(1:ny),[yarr yarr],[Imin Imax]);
+elseif yarr - yrange >= 1 && yarr + yrange <= ny
+        set(fh,'CurrentAxes',yh);
+        Imin = min(yprofile(yarr-yrange:yarr+yrange));
+        Imax = max(yprofile(yarr-yrange:yarr+yrange));
+        plot(yarr-yrange:yarr+yrange,yprofile(yarr-yrange:yarr+yrange),...
+            [yarr yarr],[Imin Imax]);
+elseif yarr - yrange < 1  && yarr + yrange <= ny
+        set(fh,'CurrentAxes',yh);
+        y = yrange+1;
+        Imin = min(yprofile(y-yrange:y+yrange));
+        Imax = max(yprofile(y-yrange:y+yrange));
+        plot(y-yrange:y+yrange,yprofile(y-yrange:y+yrange),...
+            [yarr yarr],[Imin Imax]);
+elseif yarr + yrange > ny && yarr - yrange >= 1
+        set(fh,'CurrentAxes',yh);
+        y = ny-yrange;
+        Imin = min(yprofile(y-yrange:y+yrange));
+        Imax = max(yprofile(y-yrange:y+yrange));
+        plot(y-yrange:y+yrange,yprofile(y-yrange:y+yrange),...
+            [yarr yarr],[Imin Imax]);
+end 
+clear('ny','yprofile','Imin','Imax','y');
+clear('xarr','yarr','z','yrange','stack1','yh','fh');
+end
+
+function plot_zprofile(xarr,yarr,z,zrange,stack1,zh,fh)
+nz = size(stack1,3);
+zprofile(1:nz) = stack1(xarr,yarr,1:nz);
+
+if 2*zrange+1 > nz
+        set(fh,'CurrentAxes',zh);
+        Imin = min(zprofile(1:nz));
+        Imax = max(zprofile(1:nz));
+        plot(1:nz,zprofile(1:nz),[z z],[Imin Imax]);
+elseif z - zrange >= 1 && z + zrange <= nz
+        set(fh,'CurrentAxes',zh);
+        Imin = min(zprofile(z-zrange:z+zrange));
+        Imax = max(zprofile(z-zrange:z+zrange));
+        plot(z-zrange:z+zrange,zprofile(z-zrange:z+zrange),[z z],[Imin Imax]);
+elseif z - zrange < 1 && z + zrange <= nz  
+        set(fh,'CurrentAxes',zh);
+        zz = zrange+1;
+        Imin = min(zprofile(zz-zrange:zz+zrange));
+        Imax = max(zprofile(zz-zrange:zz+zrange));
+        plot(zz-zrange:zz+zrange,zprofile(zz-zrange:zz+zrange),...
+            [z z],[Imin Imax]);
+elseif z + zrange > nz && z - zrange >= 1
+        set(fh,'CurrentAxes',zh);
+        zz = nz-zrange;
+        Imin = min(zprofile(zz-zrange:zz+zrange));
+        Imax = max(zprofile(zz-zrange:zz+zrange));
+        plot(zz-zrange:zz+zrange,zprofile(zz-zrange:zz+zrange),...
+            [z z],[Imin Imax]);
+end 
+
+clear('nz','zprofile','Imin','Imax','z');
+clear('xarr','yarr','z','zrange','stack1','zh','fh');
+end
+
+function I = gauss_integrated3D_position_list(Coeffs, pos)
+%everything is in pixel units here
+%origin of positions at the corner on the image 
+%(i.e. centers of pixels have half integer vox_size values)
+%pos is an array of positions [x y z]
+
+Imax = Coeffs(1); bg = Coeffs(2); sxy=Coeffs(3); sz=Coeffs(4); xc=Coeffs(5); yc=Coeffs(6); zc=Coeffs(7);
+
+r = pos(:,1);
+c = pos(:,2);
+h = pos(:,3);
+
+diffx1 =  (double(r-1)) - xc;
+diffx1 = diffx1 ./ ( sqrt(2) * sxy );
+diffx2 =  double(r) - xc;
+diffx2 = diffx2 ./ ( sqrt(2) * sxy );
+
+intensity1 = abs( erf( diffx1) - erf(diffx2) );
+
+diffy1 =  (double(c-1)) - yc;
+diffy1 = diffy1 ./ ( sqrt(2) * sxy );
+diffy2 =  double(c) - yc;
+diffy2 = diffy2 ./ ( sqrt(2) * sxy );
+
+intensity2 = abs( erf( diffy1) - erf(diffy2) );
+
+diffz1 =  (double(h-1)) - zc;
+diffz1 = diffz1 ./ ( sqrt(2) * sz );
+diffz2 =  double(h) - zc;
+diffz2 = diffz2 ./ ( sqrt(2) * sz );
+
+intensity3 = abs( erf( diffz1) - erf(diffz2) ); 
+intensity = Imax.*intensity1.*intensity2.*intensity3;
+I = intensity / 8.0 + bg;
+
+end

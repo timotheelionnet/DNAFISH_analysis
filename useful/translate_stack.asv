@@ -1,0 +1,16 @@
+function st2 = translate_stack(st1,dx,dy,dz)
+%st has same size as st1, the points in st2 are obtained from st1 by
+%translation of dx,dy,dz 
+%padding is performed with the median of st1 as default value.
+[nx ny nz] = size(st1);
+bg = median_stack(st1);
+dx = round(dx); dy = round(dy); dz = round(dz);
+st2 = bg*ones(nx,ny,nz);
+
+if(dx>=0)
+    x1min = 1; x1max = nx-dx; x2min = 
+else
+    x1min = 1-dx; x1max = nx; x2min = 1;
+end
+st2() = st1()
+end

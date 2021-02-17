@@ -1,0 +1,15 @@
+function out = subsample_data_set(arr,npts)
+
+[nx,ny] = size(arr);
+if nx < npts
+    disp(['your array size = ' num2str(nx) ' is smaller than your sampling interval ' num2str(npts)]);
+    out = arr;
+    return;
+end
+
+nout = floor(npts/nx);
+out = zeros(nout,ny);
+
+out(1:nout,1:ny)
+
+end
