@@ -137,9 +137,13 @@ for i = 1:numel(cond(:,1))
     dist{i} = dis;%each column is dis of a different condition
 end
 
-plot_fig(dist,cond,'correlation',colorID,0.005,params.Output.outFolder,'corr')
+plot_fig(dist,cond,'correlation',colorID,0.00005,params.Output.outFolder,'corr')
 
 %% Plot PDF and CDF for dis between loci center
+voxsize = [params.Settings.voxSize_dxy,...
+            params.Settings.voxSize_dxy,...
+            params.Settings.voxSize_dz];
+
 %find list of conditions
 cond = find_cond(fs.fList);
 
@@ -165,30 +169,45 @@ end
 dist = {};
 for i = 1:numel(cond(:,1))
     curFileList = fs.getFileName({'Condition'},cond(i),'match','all');
-    dis = [];
+    dis1 = [];
     for j = 1:length(curFileList)
         %load match file
-        match = load(curFileList{j},'-ascii');
+        match = load(curFileList{j},'-ascii');        
+        [d,f,~] = fileparts(curFileList{j});
+        disp('processing file:')
+        disp(f)
         
+        % find the conditions in the current file
+        fl = fs.getFileName({},{},'match','all');
+        idx = find( ismember(fl,curFileList{j}) );
+        curCond = {};
+        for k = 1:numel(fs.conditions)
+            curCond = [curCond,fs.fList.(fs.conditions{k})(idx)];
+        end
         %load loc3 of centroid
-        [~,f,~] = fileparts(match);
-        C1 = fs.fList.(1){i};
-        C2 = fs.fList.(2){i};
+        C1 = curCond{1};
+        C2 = curCond{2};
         CropFolder1 = fullfile(params.InputFolders.CropFolder,...
-                    strcat('C',C1,f(5:length(f)),'_crop'));
+            strcat('C',C1,f(5:length(f)),'_crop'));
         CropFolder2 = fullfile(params.InputFolders.CropFolder,...
-                 strcat('C',C2,f(5:length(f)),'_crop'));
+            strcat('C',C2,f(5:length(f)),'_crop'));
         cen1 = load(fullfile(CropFolder1,'centroid.loc3'),'-ascii');
         cen2 = load(fullfile(CropFolder2,'centroid.loc3'),'-ascii');
         deltanm = match(:,3:5);
         delta = int64(convert_loc_pix_to_nm(deltanm,1./voxsize));
-        dis3 = cen2-cen1+delta;
-        dis0 = sqrt(sum(dis3.^2));
-    
-        %save dist
-        dis = [dis;dis0];    
+        
+        dis = [];
+        for k = 1:length(match)
+            dis3 = cen2(match(k,2),:)-cen1(match(k,1),:)+double(delta(k,:));
+            dis3 = convert_loc_pix_to_nm(dis3,voxsize);
+            dis0 = sqrt(sum(dis3.^2));
+            %save dist
+            dis = [dis;dis0];
+        end
+        save(fullfile(d,strcat(f,'_cen_dist.txt')),'dis','-ascii')
+        dis1 = [dis1;dis];
     end
-    dist{i} = dis;%each column is dis of a different condition
+    dist{i} = dis1;%each column is dis of a different condition
 end
 
 %plot CDF and PDF
