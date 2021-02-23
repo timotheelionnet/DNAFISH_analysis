@@ -55,12 +55,15 @@ end
 plot_fig(dist,cond,'distance/nm',colorID,params.Settings.hist_binSize,params.Output.outFolder,'dis_Airlocalize')
 
 %% Plot PDF and CDF for dx, dy, dz of airlocalize center
-%find list of conditions
-cond = find_cond(fs.fList);
-
+voxsize = [params.Settings.voxSize_dxy,...
+            params.Settings.voxSize_dxy,...
+            params.Settings.voxSize_dz];
+        
 try
-    color;
+    colorID;
 catch
+    %find list of conditions
+    cond = find_cond(fs.fList);
     des = parse_description(params.channelDescription.ConditionDescription);
     cond = group_conditions(cond,des);
     size0 = size(cond);
@@ -90,22 +93,23 @@ for i = 1:numel(cond(:,1))
         %save dist
         dis = [dis;match(:,3:5)];    
     end
-    dx{i} = dis(:,1);%each column is dis of a different condition
-    dy{i} = dis(:,2);
-    dz{i} = dis(:,3);
+    dis = int64(convert_loc_pix_to_nm(dis,1./voxsize));
+    dx{i} = double(dis(:,1));%each column is dis of a different condition
+    dy{i} = double(dis(:,2));
+    dz{i} = double(dis(:,3));
 end
 
-plot_fig(dx,cond,'pixel',colorID,params.Settings.hist_binSize,params.Output.outFolder,'dx')
-plot_fig(dy,cond,'pixel',colorID,params.Settings.hist_binSize,params.Output.outFolder,'dy')
-plot_fig(dz,cond,'pixel',colorID,params.Settings.hist_binSize,params.Output.outFolder,'dz')
+plot_fig(dx,cond,'pixel',colorID,1,params.Output.outFolder,'dx')
+plot_fig(dy,cond,'pixel',colorID,1,params.Output.outFolder,'dy')
+plot_fig(dz,cond,'pixel',colorID,1,params.Output.outFolder,'dz')
 
 %% plot PDF and CDF for overlap
-%find list of conditions
-cond = find_cond(fs.fList);
 
 try
-    color;
+    colorID;
 catch
+    %find list of conditions
+    cond = find_cond(fs.fList);
     des = parse_description(params.channelDescription.ConditionDescription);
     cond = group_conditions(cond,des);
     size0 = size(cond);
@@ -134,22 +138,24 @@ for i = 1:numel(cond(:,1))
         %save dist
         dis = [dis;round(overlap,10)];    
     end
-    dist{i} = dis;%each column is dis of a different condition
+    dis0 = 1./dis;
+    dis0(isinf(dis0)) = 100000;
+    dis0(dis0>100000) = 100000;
+    dist{i} = dis0;%each column is dis of a different condition
 end
 
-plot_fig(dist,cond,'correlation',colorID,0.00005,params.Output.outFolder,'corr')
+plot_fig(dist,cond,'1/correlation',colorID,100,params.Output.outFolder,'corr')
 
 %% Plot PDF and CDF for dis between loci center
 voxsize = [params.Settings.voxSize_dxy,...
             params.Settings.voxSize_dxy,...
             params.Settings.voxSize_dz];
 
-%find list of conditions
-cond = find_cond(fs.fList);
-
 try
-    color;
+    colorID;
 catch
+    %find list of conditions
+    cond = find_cond(fs.fList);
     des = parse_description(params.channelDescription.ConditionDescription);
     cond = group_conditions(cond,des);
     size0 = size(cond);
@@ -167,9 +173,13 @@ end
 
 %calculate dis between center
 dist = {};
+distx = {};
+disty = {};
+distz = {};
 for i = 1:numel(cond(:,1))
     curFileList = fs.getFileName({'Condition'},cond(i),'match','all');
     dis1 = [];
+    dis2 = [];
     for j = 1:length(curFileList)
         %load match file
         match = load(curFileList{j},'-ascii');        
@@ -197,8 +207,10 @@ for i = 1:numel(cond(:,1))
         delta = int64(convert_loc_pix_to_nm(deltanm,1./voxsize));
         
         dis = [];
+        
         for k = 1:length(match)
             dis3 = cen2(match(k,2),:)-cen1(match(k,1),:)+double(delta(k,:));
+            dis2 = [dis2;dis3];
             dis3 = convert_loc_pix_to_nm(dis3,voxsize);
             dis0 = sqrt(sum(dis3.^2));
             %save dist
@@ -208,10 +220,91 @@ for i = 1:numel(cond(:,1))
         dis1 = [dis1;dis];
     end
     dist{i} = dis1;%each column is dis of a different condition
+    distx{i} = dis2(:,1);
+    disty{i} = dis2(:,2);
+    distz{i} = dis2(:,3);
 end
 
 %plot CDF and PDF
 plot_fig(dist,cond,'distance/nm',colorID,params.Settings.hist_binSize,params.Output.outFolder,'dis_cen')
+plot_fig(distx,cond,'pixel',colorID,1,params.Output.outFolder,'dx_cen')
+plot_fig(disty,cond,'pixel',colorID,1,params.Output.outFolder,'dy_cen')
+plot_fig(distz,cond,'pixel',colorID,1,params.Output.outFolder,'dz_cen')
+
+%% Plot PDF and CDF for Rg and volumn
+try
+    colorID;
+catch
+    %find list of conditions
+    cond = find_cond(fs.fList);
+    des = parse_description(params.channelDescription.ConditionDescription);
+    cond = group_conditions(cond,des);
+    size0 = size(cond);
+    color1 = color_generator(size0);
+    idx = 1:numel(cond);
+    idx = reshape(idx,size0);
+    [cond,idx1] = flat_array(cond,'column',string(idx));
+    [row,col]=ind2sub(size0,str2double(idx1));
+    colorID = zeros(length(idx1),3);
+    for i = 1:length(idx1)
+        colorID(i,:) = color1(row(i),col(i),:);
+    end
+    cond = mat2cell(cond,ones(length(cond),1));
+end
+
+R1x = {};
+R1y = {};
+R1z = {};
+R2x = {};
+R2y = {};
+R2z = {};
+V1 = {};
+V2 = {};
+for i = 1:numel(cond(:,1))
+    curFileList = fs.getFileName({'Condition'},cond(i),'match','all');
+    r1 = [];
+    r2 = [];
+    v1 = [];
+    v2 = [];
+    for j = 1:length(curFileList)
+        [~,f,~] = fileparts(curFileList{j});
+        % find the conditions in the current file
+        fl = fs.getFileName({},{},'match','all');
+        idx = find( ismember(fl,curFileList{j}) );
+        curCond = {};
+        for k = 1:numel(fs.conditions)
+            curCond = [curCond,fs.fList.(fs.conditions{k})(idx)];
+        end
+        %load Rg and volume
+        C1 = curCond{1};
+        C2 = curCond{2};
+        CropFolder1 = fullfile(params.InputFolders.CropFolder,...
+            strcat('C',C1,f(5:length(f)),'_crop'));
+        CropFolder2 = fullfile(params.InputFolders.CropFolder,...
+            strcat('C',C2,f(5:length(f)),'_crop'));
+        r1 = [r1;load(fullfile(CropFolder1,'Rg.loc3'),'-ascii')];
+        r2 = [r2;load(fullfile(CropFolder2,'Rg.loc3'),'-ascii')];
+        v1 = [v1;load(fullfile(CropFolder1,'volumn.txt'),'-ascii')];
+        v2 = [v2;load(fullfile(CropFolder2,'volumn.txt'),'-ascii')];
+    end
+    R1x{i} = r1(:,1);
+    R1y{i} = r1(:,2);
+    R1z{i} = r1(:,3);
+    R2x{i} = r2(:,1);
+    R2y{i} = r2(:,2);
+    R2z{i} = r2(:,3);
+    V1{i} = v1;
+    V2{i} = v2;
+end
+
+plot_fig(R1x,cond,'Rg/pixel',colorID,0.02,params.Output.outFolder,'Rg_x_127')
+plot_fig(R2x,cond,'Rg/pixel',colorID,0.02,params.Output.outFolder,'Rg_x_130')
+plot_fig(R1y,cond,'Rg/pixel',colorID,0.02,params.Output.outFolder,'Rg_y_127')
+plot_fig(R2y,cond,'Rg/pixel',colorID,0.02,params.Output.outFolder,'Rg_y_130')
+plot_fig(R1z,cond,'Rg/pixel',colorID,0.02,params.Output.outFolder,'Rg_z_127')
+plot_fig(R2z,cond,'Rg/pixel',colorID,0.02,params.Output.outFolder,'Rg_z_130')
+plot_fig(V1,cond,'Volume/pixel',colorID,params.Settings.hist_binSize,params.Output.outFolder,'Volume_127')
+plot_fig(V2,cond,'Volume/pixel',colorID,params.Settings.hist_binSize,params.Output.outFolder,'Volume_130')
 
 %% functions for plot
 function cond = find_cond(fList)
