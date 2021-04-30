@@ -1,5 +1,9 @@
 A series of scripts for DNA FISH analysis, co-developed by Yi Fu and Timothee Lionnet  
   
+The master script is DNA_FISH_pipeline.m, which exacute the following:  
+generate_test_img.m  
+Generate images for testing.  
+  
 DNA_FISH_pipeline_1.m  
 Input raw DNA FISH images, perform Airlocalize (including clean up double detections) and crop loci from images.  
   
