@@ -2,9 +2,12 @@ addpath('../fileSet');
 addpath('../iniconfig');
 
 %% get list of files
-
-% config file path
-configFileName = '20210203_DNA_FISH_mensure_config.ini';
+try
+    configFileName;
+catch
+    % config file path
+    configFileName = '20210203_DNA_FISH_mensure_config.ini';
+end
 
 % create file list object
 fs = fileSet;
@@ -18,6 +21,7 @@ fs.toNumeric({'Channel','TechnicalReplicate','FOV'},convertNonNumeralStrings);
 params = readParamsFromIniFile(configFileName);
 
 %% calculate centriods 
+offset_airlocalize = [-1,-1,-0.5];
 
 %loop through crop folders
 for i=1:numel(params.channelDescription.fishChannelList)
@@ -57,10 +61,12 @@ for i=1:numel(params.channelDescription.fishChannelList)
                 locus = readTifStackWithImRead(fullfile(CropFolder,...
                     ['locus_bgcorr',add_digits(k,nDigitsMax1),'.tif']));
         
-                if i == 1 && j == 1 && k == 1
+                try
+                    [x,y,z];
+                catch
                     %generate meshgrid
                     size0 = size(locus);
-                    [x,y,z] = meshgrid(1:size0(1),1:size0(2),1:size0(3));
+                    [y,x,z] = meshgrid(1:size0(2),1:size0(1),1:size0(3));
                 end
         
                 %calculate centroid
@@ -68,11 +74,17 @@ for i=1:numel(params.channelDescription.fishChannelList)
                 yc = sum(y.*locus,'all')/sum(locus,'all');
                 zc = sum(z.*locus,'all')/sum(locus,'all');
         
-                cen = [cen;[xc,yc,zc]];       
+                cen = [cen;[xc,yc,zc]];
             end
+            boxloc = ceil(loc(:,1:3));
+            sizeb = size(locus);
+            cen0 = boxloc-sizeb./2+cen+offset_airlocalize;
+            
             %save centroid
             FileName = fullfile(CropFolder,'centroid.loc3');
-            save(FileName,'cen','-ascii');  
+            save(FileName,'cen','-ascii'); 
+            FileName = fullfile(CropFolder,'centroid0.loc3');
+            save(FileName,'cen0','-ascii');
         end
 end
 
@@ -122,7 +134,7 @@ for i=1:numel(params.channelDescription.fishChannelList)
                 [x,y,z];
             catch
                 size0 = size(locus);
-                [x,y,z] = meshgrid(1:size0(1),1:size0(2),1:size0(3));
+                [y,x,z] = meshgrid(1:size0(2),1:size0(1),1:size0(3));
             end
         
             %centroid coordinate
@@ -132,9 +144,9 @@ for i=1:numel(params.channelDescription.fishChannelList)
             zc = cen0(3);
             
             %calculate Rg
-            rx = sum(sqrt(power((x-xc),2).*locus),'all')/sum(locus,'all');
-            ry = sum(sqrt(power((y-yc),2).*locus),'all')/sum(locus,'all');
-            rz = sum(sqrt(power((z-zc),2).*locus),'all')/sum(locus,'all');
+            rx = sqrt(sum(power((x-xc),2).*locus,'all'))/sqrt(sum(locus,'all'));
+            ry = sqrt(sum(power((y-yc),2).*locus,'all'))/sqrt(sum(locus,'all'));
+            rz = sqrt(sum(power((z-zc),2).*locus,'all'))/sqrt(sum(locus,'all'));
         
             r = [r;[rx,ry,rz]];       
         end
@@ -184,7 +196,8 @@ for i=1:numel(params.channelDescription.fishChannelList)
                 ['locus_bgcorr',add_digits(k,nDigitsMax1),'.tif']));
         
             %count number of pixel above threshold
-            idx = find(locus > params.Settings.threshold);
+            boxc = ceil(size(locus)./2);
+            idx = find(locus > locus(boxc(1),boxc(2),boxc(3))/3);
             count = [count;length(idx)];
         end
     

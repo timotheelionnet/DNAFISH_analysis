@@ -2,9 +2,12 @@ addpath('../fileSet');
 addpath('../iniconfig');
 
 %% get list of files
-
-% config file path
-configFileName = '20210201_DNA_FISH_match_loci_config.ini';
+try
+    configFileName;
+catch
+    % config file path
+    configFileName = '20210201_DNA_FISH_match_loci_config.ini';
+end
 
 % create file list object
 fs = fileSet;
@@ -18,8 +21,11 @@ fs.toNumeric({'Channel','TechnicalReplicate','FOV'},convertNonNumeralStrings);
 params = readParamsFromIniFile(configFileName);
 
 %% loop through fish channels and match loci
-
-compute_hist = 1;
+if ~ exist(fullfile(params.Output.outFolder,'loci_match'),'dir')
+    mkdir(fullfile(params.Output.outFolder,'loci_match'));
+end
+        
+compute_hist = 0;
 nDims = 3;
 voxSize = [params.MatchLociSettings.voxSize_dxy,...
     params.MatchLociSettings.voxSize_dxy,...
@@ -64,12 +70,14 @@ for j=1:numel(curFileList)
     loc1 = load(fullfile(cropFolder1,'location.loc3'),'-ascii');
     if isempty(loc1)
         disp('Loc3 file is empty!')
+        loc1 = [];
+        save(fullfile(cropFolder1,'location_mask_sorted.loc3'),'loc1','-ascii');
         continue
     end
     %load cell mask
     [~,f,~] = fileparts(curFileList{j});
     MaskFile = fullfile(params.InputFolders.CellMaskFolder,strcat('C', string(DAPI),f(3:length(f)),'max_Mask.tiff'));
-    Mask = timtiffread(MaskFile);
+    Mask = readTifStackWithImRead(MaskFile);
     %sort loci into cell masks   
     loc1 = sort_loci_into_cell_masks(loc1,Mask);
     save(fullfile(cropFolder1,'location_mask_sorted.loc3'),'loc1','-ascii');
@@ -93,9 +101,16 @@ for i=1:length(C2)
         for k = 1:numel(fs.conditions)
             curCond = [curCond,fs.fList.(fs.conditions{k})(idx)];
         end
-        ReferChannel = fs.getFileName({'Channel', 'Condition', 'TechnicalReplicate', 'FOV'},...
-            {params.channelDescription.ReferChannel, curCond(2), cell2mat(curCond(3)), cell2mat(curCond(4))},...
-            'fishImg');
+        
+        if params.MatchLociSettings.testing
+            ReferChannel = fs.getFileName({'Channel', 'FOV'},...
+                {params.channelDescription.ReferChannel, cell2mat(curCond(2))},'fishImg');
+        else
+            ReferChannel = fs.getFileName({'Channel', 'Condition', 'TechnicalReplicate', 'FOV'},...
+                {params.channelDescription.ReferChannel, curCond(2), cell2mat(curCond(3)), cell2mat(curCond(4))},...
+                'fishImg');
+        end
+        
         [~,fr,~] = fileparts(cell2mat(ReferChannel));
         cropFolder1 = fullfile(params.InputFolders.CropFolder,[fr,'_crop']);
         
@@ -105,13 +120,17 @@ for i=1:length(C2)
         
         if isempty(loc1) || isempty(loc2)
             disp('Loc3 file is empty!')
+            match = [];
+            matchFileName = fullfile(params.Output.outFolder,'loci_match',...
+                strcat('C',string(params.channelDescription.ReferChannel),'-',string(curChannel),fr(3:length(fr)),'.dloc3'));
+            save(matchFileName,'match','-ascii');
             continue
         end
         
         %load cell mask
         disp(['Assigning cell ID for ', f]);
         MaskFile = fullfile(params.InputFolders.CellMaskFolder,strcat('C', string(DAPI),f(3:length(f)),'max_Mask.tiff'));
-        Mask = timtiffread(MaskFile);
+        Mask = readTifStackWithImRead(MaskFile);
         
         %sort loci into cell masks
         loc2 = sort_loci_into_cell_masks(loc2,Mask);
@@ -173,7 +192,8 @@ for i=1:length(C2)
                     missed1 = missed1 + 1;
                 else
                     delta = loc3nm1(k,1:3)-loc3nm2(idx(indx),1:3);
-                    match = [match;[k,idx(indx),delta,dist,cellID]];
+                    match = [match;[k,idx(indx),convert_loc_pix_to_nm(ceil(loc1(k,1:3))-ceil(loc2(idx(indx),1:3)),voxSize),...
+                        dist,cellID,delta]];
                 end
             end
         end
@@ -220,9 +240,6 @@ for i=1:length(C2)
         fprintf('Missed %d in %s\n', missed2, f);
         
         % Save match result and add to file list
-        if ~ exist(fullfile(params.Output.outFolder,'loci_match'),'dir')
-            mkdir(fullfile(params.Output.outFolder,'loci_match'));
-        end
         matchFileName = fullfile(params.Output.outFolder,'loci_match',...
             strcat('C',string(params.channelDescription.ReferChannel),'-',string(curChannel),fr(3:length(fr)),'.dloc3'));
         fs.setFileName(fs.conditions,curCond,'loci_match',matchFileName);

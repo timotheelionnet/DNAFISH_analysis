@@ -3,9 +3,12 @@ addpath('../iniconfig');
 addpath('../cbrewer');
 
 %% get list of files
-
-% config file path
-configFileName = '20210203_DNA_FISH_overlap_config.ini';
+try
+    configFileName;
+catch
+    % config file path
+    configFileName = '20210203_DNA_FISH_overlap_config.ini';
+end
 
 % create file list object
 fs = fileSet;
@@ -23,10 +26,13 @@ voxsize = [params.Settings.voxSize_dxy,...
     params.Settings.voxSize_dxy,...
     params.Settings.voxSize_dz];
 
-for i = 1:numel(fs.fList.(6))
+for i = 1:numel(fs.fList.(width(fs.fList)))
     %load match file
-    match = load(fs.fList.(6){i},'-ascii');
-    [~,f,~] = fileparts(fs.fList.(6){i});
+    match = load(fs.fList.(width(fs.fList)){i},'-ascii');
+    if isempty(match)
+        continue
+    end
+    [~,f,~] = fileparts(fs.fList.(width(fs.fList)){i});
     disp('Processing file:')
     disp(f)
     C1 = fs.fList.(1){i};
@@ -69,12 +75,12 @@ for i = 1:numel(fs.fList.(6))
         locus2 = readTifStackWithImRead(fullfile(CropFolder2,...
             ['locus_bgcorr',add_digits(match(j,2),nDigitsMax2),'.tif']));
         %normalize by sum
-        locus1n = double(locus1)/double(sum(locus1,'all'));
-        locus2n = double(locus2)/double(sum(locus2,'all'));
+        locus1n = double(locus1)/sqrt(sum(double(locus1).^2,'all'));
+        locus2n = double(locus2)/sqrt(sum(double(locus2).^2,'all'));
         %initialize a big 'image' consist of zeros
-        sizeb = int64(size(locus1));  
+        sizeb = size(locus1);  
         deltanm = match(j,3:5);
-        delta = int64(convert_loc_pix_to_nm(deltanm,1./voxsize));
+        delta = convert_loc_pix_to_nm(deltanm,1./voxsize);
         I = zeros(sizeb*2+abs(delta)*2);
         %put locus1 and locus2 in the image        
         loc1 = 1.+delta;
@@ -95,6 +101,9 @@ for i = 1:numel(fs.fList.(6))
     end
     
     %save corr in file
+    if ~ exist(params.Output.outFolder,'dir')
+        mkdir(params.Output.outFolder);
+    end
     save(fullfile(params.Output.outFolder,strcat(f,'_overlap.txt')),'overlap','-ascii')
 end
 
