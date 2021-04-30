@@ -30,7 +30,7 @@ function crop_box(ims, loc, outDir, boxSize, thickness)
             numString = [repmat('0',1,nZerosToAdd),num2str(j)];
 
             [~,stack_bg_corr] = ...
-                gen_linear_interpol_clean_small(ims,loc(i,1:3),[wx,wz],thickness,'small');
+                gen_linear_interpol_clean_smallYi(ims,loc(i,1:3),[wx,wz],thickness,'small');
             save_as_tiff(loci{j},fullfile(outDir,['locus',numString,'.tif']));
             save_as_tiff(stack_bg_corr,fullfile(outDir,['locus_bgcorr',numString,'.tif']));
         end
