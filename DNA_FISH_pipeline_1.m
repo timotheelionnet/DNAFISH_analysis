@@ -7,9 +7,12 @@ addpath('../useful');
 %addpath('../DiSPIM_PSF'); %This folder is not avialible on server and not
 %used in this script
 %% get the list of files
-
-% config file path
-configFileName = '20210111_DNA_FISH_crop_config.ini';
+try
+    configFileName;
+catch
+    % config file path
+    configFileName = '20210111_DNA_FISH_crop_config.ini';
+end
 
 % create file list object
 fs = fileSet;
@@ -39,7 +42,7 @@ if params.channelDescription.useAirlocalizeGUI
                 locpar.set_thresh_manually = 0;
              else
                  % load current image
-                 locpar.data = timtiffread(curFileList{j});
+                 locpar.data = readTifStackWithImRead(curFileList{j});
 
                  % run airlocalize without GUI for the rest of the files
                  [res,~] = perform_detection_on_single_image_once_Dipankar2(locpar);
@@ -190,7 +193,7 @@ for i=1:numel(params.channelDescription.fishChannelList)
         disp(curFileList{j})
         
         %load img and loc3
-        ims = timtiffread(curFileList{j});
+        ims = readTifStackWithImRead(curFileList{j});
         [d,f,~] = fileparts(curFileList{j});
         loc = load(fullfile(d, [f, '_clean.loc3']),'-ascii');
         
@@ -209,7 +212,10 @@ for i=1:numel(params.channelDescription.fishChannelList)
         
         %crop and output boxes
         boxSize = [params.cropSpotsSettings.boxSize_xy, params.cropSpotsSettings.boxSize_xy, params.cropSpotsSettings.boxSize_z];
-        crop_box(ims, loc, outFolderCrop, boxSize, params.cropSpotsSettings.boxBackgroundThickness);
-        
+        if params.cropSpotsSettings.testing
+            crop_box(ims, loc, outFolderCrop, boxSize, params.cropSpotsSettings.boxBackgroundThickness);
+        else
+            crop_box_hotpixel(ims, loc, outFolderCrop, boxSize, params.cropSpotsSettings.boxBackgroundThickness);
+        end
     end
 end
