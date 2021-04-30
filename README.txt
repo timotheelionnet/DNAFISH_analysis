@@ -2,7 +2,7 @@ A series of scripts for DNA FISH analysis, co-developed by Yi Fu and Timothee Li
   
 The master script is DNA_FISH_pipeline.m, which exacute the following:  
 generate_test_img.m  
-Generate images for testing.  
+Generate test images using functions in qc.  
   
 DNA_FISH_pipeline_1.m  
 Input raw DNA FISH images, perform Airlocalize (including clean up double detections) and crop loci from images.  
@@ -18,8 +18,5 @@ Input cropped loci images, compute centroid locations, radio of gyrations, and v
   
 plotPDF02032021.m  
 Input data, plot PDF and CDF.   
-  
-generate_test_img.m  
-Generate test images using functions in qc.  
-  
+    
 *fileset, useful, and AIIRLOCALIZE1_stable is too big for uploading
