@@ -17,6 +17,9 @@ mensure_cropped_loci.m
 Input cropped loci images, compute centroid locations, radio of gyrations, and volumns of loci.
   
 plotPDF02032021.m  
-Input data, plot PDF and CDF.   
+Input data, plot PDF and CDF.  
+  
+analysis_cell_cycle.m  
+Input loci match results, identify cell cycle(G1/G2) by number of DNA FISH spots, then plot DAPI/EU/IF intensity and distances between loci center grouped by cell cycle.  
     
 *fileset, useful, and AIIRLOCALIZE1_stable is too big for uploading
