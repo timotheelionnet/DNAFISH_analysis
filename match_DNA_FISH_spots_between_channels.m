@@ -106,8 +106,8 @@ for i=1:length(C2)
             ReferChannel = fs.getFileName({'Channel', 'FOV'},...
                 {params.channelDescription.ReferChannel, cell2mat(curCond(2))},'fishImg');
         else
-            ReferChannel = fs.getFileName({'Channel', 'Condition', 'TechnicalReplicate', 'FOV'},...
-                {params.channelDescription.ReferChannel, curCond(2), cell2mat(curCond(3)), cell2mat(curCond(4))},...
+            ReferChannel = fs.getFileName({'Channel', 'Condition', 'FOV'},...
+                {params.channelDescription.ReferChannel, curCond(2), cell2mat(curCond(3))},...
                 'fishImg');
         end
         
@@ -197,43 +197,33 @@ for i=1:length(C2)
                 end
             end
         end
+        if isempty(match)
+            continue
+        end
         %compute number of missed spots in C2
         missed2 = 0;
+        match2=[];
         for k = 1:length(loc2(:,1))
             [idx,~] = find(match(:,2)==k);
             if length(idx) > 2
                 fprintf('Loci %d in %s was matched for %d times.\n',k,f,length(idx));
                 disp('Only the nearest two were kept')
+                indx=[];
                 for l = [1,2]
                     [~,indx1] = min(match(idx,4));
-                    if indx1 == 1
-                        idx = idx(2:length(idx));               
-                    else 
-                        if indx1 == length(idx)
-                            idx = idx(1:indx1-1);
-                        else
-                            idx = [idx(1:indx1-1);idx(indx1+1:length(idx))];%idx of matches to be removed
-                        end
-                    end
+                    indx = [indx,indx1];
                 end
-                for l = 1:length(idx)
-                    if idx(l) == 1
-                        match = match(2:length(match(:,1)),:);               
-                    else 
-                        if idx(l) == length(match(:,1))
-                            match = match(1:idx(l)-1,:);
-                        else
-                            match = [match(1:l-1,:);match(l+1:length(match(:,1)),:)];                
-                        end
-                    end                    
-                end
-                missed1 = missed1 + length(idx);
+                missed1 = missed1 + length(idx)-2;
+                match2=[match2;match(indx,:)];
             else
                 if isempty(idx)
                     missed2 = missed2+1;
+                else
+                    match2=[match2;match(idx,:)];
                 end                
             end
         end
+        match = match2;
         
         fprintf('Matched %d loci between %s and %s.\n', length(match(:,1)),fr,f);
         fprintf('Missed %d in %s\n', missed1, fr); 
