@@ -341,13 +341,15 @@ if process_images == 1
     
     end
 end
-%%
-for i = 1:numel(sampleDirs)
+%% generate cell masks
+if make_cell_masks == 1
+    for i = 1:numel(sampleDirs)
+    
 
-% generate cell masks
-    if make_cell_masks == 1
 
-        save_dir = mask_dir;
+        save_dir =fullfile(sampleDirs{i}, "cell_masks/");
+
+        max_z_dir = fullfile(sampleDirs{i}, "max_z/");
 
         my_fl = getFileListFromDir(max_z_dir, 0, 0);
 

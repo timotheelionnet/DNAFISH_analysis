@@ -18,8 +18,8 @@ fs = fileSet;
 % beadConfigPath = "H:\Finn_DriveH\20240226_PPARG_Staggered_Timecourse\beads\session3_beads.ini";
 % Do you want to run AIRLOCALIZE: 1
 % loc4 files already saved in directory: 0
-runAirlocalize = 0;
-trainAirlocalize = 0;
+% runAirlocalize = 1;
+% trainAirlocalize = 1;
 
 % Do you want to define an ROI within which to construct your model?
 % I normally do not use this feature. We can always set an ROI when we

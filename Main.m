@@ -4,9 +4,9 @@
 % Output = Spatial analysis
 
 %% USER INPUT
-config_fname = "G:\Finn\20240327_FLUOR_SWAP_PPARG\original_fluor_set.ini";
+config_fname = "G:\Finn\FISH_PIPELINE_DEMO\condition2.ini"; 
 
-refChannel = 2; % this is the ref channel idx in  terms of ur FISH data NOT beads
+refChannel = 3; % this is the ref channel idx in  terms of ur FISH data NOT beads
 
 % Load params
 load_params_from_cfg_for_pipe

@@ -15,7 +15,7 @@
 
 %% USER INPUT: Project directory
 % give the path to the project folder containing bead and/or FISH image folders
-parentPath = 'G:\Finn\20240327_FLUOR_SWAP_PPARG\swapped_fluor_set';
+parentPath = 'G:\Finn\FISH_PIPELINE_DEMO';
 
 %% USER INPUT: Pre-process Bead images
 
@@ -25,10 +25,24 @@ doFlatField =1; % apply flat field correction to your iamges
 ref_channel = 2; % the channel you will map your data to. Use uManager channel value in your beads, eg 'C3-beads.loc3'
 
 voxSize = [98, 98, 250]; % x,y,z of your voxel in nm
+
 %%
 %~~~~RUN~~~~~~%
 Integrated_MIJI_bead_preprocess_v2
 
+%% USER INPUT Bead analysis (must wait until pre-processing is done
+
+% Above Preprocessing will generate a .ini file in your project directory for
+% beads. Paste that path here and run this chunk
+beadConfigPath = "G:\Finn\FISH_PIPELINE_DEMO\beads_session1.ini";
+
+% output will be saved in beadfolder/res as a beadsName_fits.mat.  
+
+runAirlocalize = 1;
+trainAirlocalize = 1;
+
+%~~~RUN~~~%
+Bead_Analysis_Pipeline_V6
 %%  USER INPUT: Pre-process FISH images
 
 mask_chan = 1; % specify uManager channel index in FISH images to be used for segmentation
@@ -51,13 +65,4 @@ avg_cell_diameter= 150; % avg nuclear diameter in pixels
 Integrated_MIJI_preProcess_v2
 
 
-%% USER INPUT Bead analysis (must wait until pre-processing is done
 
-% Above Preprocessing will generate a .ini file in your project directory for
-% beads. Paste that path here and run chunk
-beadConfigPath = "G:\Finn\20240327_FLUOR_SWAP_PPARG\beads.ini";
-
-% output will be saved in beadfolder/res as a beadsName_fits.mat.  
-
-%~~~RUN~~~%
-Bead_Analysis_Pipeline_V6
