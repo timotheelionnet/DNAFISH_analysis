@@ -7,12 +7,13 @@ cfg.ReadFile(config_fname);
 %% Identify spots within matching distance in all pair combinations of channels
 
 
+
 % extract the list of channels from the config object
 fishChannelList = cfg.GetValues('[channelDescription]', 'fishChannelList');
 
 outFolder = fullfile(myParams.Output.outFolder, 'res', 'matched_spots');
 
-% useFinnOutputFiles = cfg.GetValues('[Settings]', 'useFinnOutputFiles');
+useFinnOutputFiles = cfg.GetValues('[Settings]', 'useFinnOutputFiles');
 
 % loop through all the pairs of channels
 if ~exist(outFolder,'dir')
@@ -21,25 +22,23 @@ end
 %%
 nc = numel(fishChannelList); % number of channels
 fovList = unique(fs.fList.FOV); % number of FOVs
+%nc =2; % use to get small loop for debugging
+%fovList = 1; % use to get small loop for debugging
 
-% collect data on spots per unique cell and channels per cell
-% cell ij has three cols: number of cells with a spot in ch i, same for j,
-% number with both
+% collect info on spots per unique cell and overlap
+% cell ij has three cols: n cells withspot in ch i, same for j, overlap
 sect_mat = cell(max(fishChannelList));
 
 % init matrix to collect transallelic matching data
 trans_matches = cell(1, max(fishChannelList)); % the ith element is for fish chnnel i
 
-% loop through channels 
 for i=1:nc
-   % loop through all unique channel pair combinations
+   
     for j=i+1:nc
-
-        % will store trans matching data for channel i
+         % will store trans matching data for channel i
         cur_trans_matches = [];
         cur_trans_matches2 = []; % use this to get the last channel
-        
-        % loop through fovs
+    
         for k=1:numel(fovList)
             disp(' ');
             fileNotFound = 0;
@@ -54,8 +53,6 @@ for i=1:nc
                     {fishChannelList(i),fovList(k)},file2match,'first');
             end
             [fileNotFound,loci] = loadFile(f1,'1',fileNotFound);
-
-
             
             % load spots for channel 2
             if ~useFinnOutputFiles

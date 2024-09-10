@@ -58,9 +58,10 @@ end
 
 disp(append("Channel ", string(refChannel), " is your reference channel for spot matching"));
 %% GUI Airlocalize
-
+trainAIRLOCALIZE = 1; % True = Train and then run AIRLOCALIZE on iamge data. False = skip the manual training/thresholding step (you already have loc3 files saved).
 if trainAIRLOCALIZE == 1
-
+    interactive_thresh = 1;
+    interactive_PSF = 0; % change if for some reason this matters
     
     % -----------------------------GUI for getting PSF and thresh
 
@@ -72,7 +73,9 @@ if trainAIRLOCALIZE == 1
     for i = 1:numel(allFISHChannels)
         disp('Processing');
         disp(myFileLists{i}{1});
-        [~, par4_path] = perform_detection_on_single_img_once_Finn(myFileLists{i}{1}, 0, trainAIRLOCALIZE,1,2); %Manual training on first image for ith channel
+        % [~, par4_path] = perform_detection_on_single_img_once_Finn(myFileLists{i}{1}, 0, trainAIRLOCALIZE,1,2); %Manual training on first image for ith channel
+
+        [~, par4_path] = perform_detection_on_single_img_once_Finn(myFileLists{i}{1}, interactive_PSF, interactive_thresh, 1,2); %Manual training on first image for ith channel
         
         locpar{i} = par4_path; %Store first par4 file for ith channel
        

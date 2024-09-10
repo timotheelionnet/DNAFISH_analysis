@@ -1,8 +1,26 @@
 
+% name of file type to be filtered
+file2filter = 'loc3_REG_sorted';
+
+
+% load manual mask file
+
+% must have allFISHCHannels loaded
+
+user_maskT = readtable("G:\Finn\20231009_PPARG_FluorSwap_trial2\day14_rep2_1\adipo_manual_mask.csv");
+
+labels = user_maskT.Label; % we will have to use some regex stuff or pattern matching on this
+
+mask_x = user_maskT.X; 
+
+mask_y = user_maskT.Y; % remember FIJI records Y from the top down... WHY! we will correct this below
+
+% base_str is the common string preceding the unique FOV number in your
+% mask table
+
+base_str = 'rep2_1_';
 
 %%
-warning('off','all')
-outFolder = fullfile(myParams.Output.outFolder, "res", "sorted_spots");
 
 % loop thru data by FOV
 
@@ -10,7 +28,6 @@ my_FOVs = unique(fs.fList.FOV);
 
 
 for i = 1:numel(my_FOVs)
-% for i = 13:13
 
     cur_FOV = my_FOVs(i);
 
@@ -20,92 +37,57 @@ for i = 1:numel(my_FOVs)
 
         cur_ch = allFISHChannels(j);
 
-        % get loc file
+        % get required files
+        cur_filepath = fs.getFileName({'FOV', 'Channel'}, {cur_FOV, cur_ch}, file2filter);
 
-        cur_loc_path = string(fs.getFileName({'FOV', 'Channel'}, {cur_FOV, cur_ch}, {file2filter}));
-        cur_loc = load(string(fs.getFileName({'FOV', 'Channel'}, {cur_FOV, cur_ch}, {file2filter})));
+        cur_loc = load(cur_filepath{1});
 
-        % make a copy for downstream filtering
-        cur_loc_new = cur_loc;
-        
-        % get mask
         cur_mask_path = fs.getFileName({'FOV', 'Channel'}, {cur_FOV, cur_ch}, 'mask');
+
         cur_mask_img = readTifStackWithImRead(cur_mask_path{1});
+
+        % get the x and y from our manual filter
+        % the are the indices of the rows relevant to cur loc file
+        keep_idx = find( contains(labels, strcat(base_str, string(cur_FOV)) ));
         
-        % get click n keep table
-        cur_cnk = readtable(string(fs.getFileName({'FOV', 'Channel'}, {cur_FOV, cur_ch}, {'cNk'})));
-
-        % check if empty
-        col_names = string(cur_cnk.Properties.VariableNames);
-
-        if ~contains(col_names, 'X') % empty tables have no X variable
-            keep_coords = [];
-
+        % units of pixels! THE X Y FROM FIJI MUST BE SWITCHED BRO
+        keep_coords = [user_maskT.Y(keep_idx), user_maskT.X(keep_idx)];
         
-        else
-            
-            % Y and X are swapped versus FIJI
-       
-            keep_coords = [ cur_cnk.Y, cur_cnk.X ];
-
-        end
-        
-       
-
 
         % column index number where cellIDs are stored
         cellID_idx = width(cur_loc) + 1;
         
+
+
         % sort the loci
+        
         sorted_loc = sort_loci_into_cell_masks(cur_loc, cur_mask_img);
 
         % firure out cellIDs of the cells we clicked on
+        
+        
         cells2keep = sort_loci_into_cell_masks(keep_coords, cur_mask_img); %% the cellID will be in col 3
         
 
-        if ~isempty(cells2keep) & ~isempty(sorted_loc)
+        if ~isempty(cells2keep)
             % remove loc that are not in desired cells
         
             rmv_idx = ~(ismember(sorted_loc(:, cellID_idx), cells2keep(:, 3)));
     
-            cur_loc_new(rmv_idx, :) = [];
+            cur_loc(rmv_idx, :) = [];
         else
             % there are no cells to keep
-            cur_loc_new(:,:) = [];
+            cur_loc(:,:) = [];
 
         end
 
-        [f,n,x] = fileparts(cur_loc_path{1});
+        [f,n,x] = fileparts(cur_filepath{1});
         saveName = fullfile(outFolder, strcat(n, x));
-        save(saveName,'cur_loc_new', '-ascii');
+        save(saveName,'cur_loc', '-ascii');
 
-        % disp('saved')
-        % saveName
-        % cur_loc_new
-
-         if ~isempty(cur_loc) & ~isempty(cur_loc_new) & j ==1 & mod(i,10) == 0 % lets look at every 10th FOV
-            % visualize
-            figure
-            
-            imagesc(cur_mask_img)
-            hold on
-
-            colormap("colorcube")
-          
-            
-            scatter( keep_coords(:,2), keep_coords(:,1), 'hexagram', "MarkerFaceColor", 'white', "MarkerEdgeColor", "black", DisplayName="clicked" )
-            hold on 
-            scatter(cur_loc(:,2), cur_loc(:,1), 'filled', "diamond", "MarkerFaceColor", "red", "MarkerEdgeColor","black", DisplayName="discard")
-            hold on
-            scatter( cur_loc_new(:,2), cur_loc_new(:,1), 'diamond', "MarkerFaceColor", 'green', "MarkerEdgeColor", "black", DisplayName="kept" )
-            
-            
-            hold on
-
-            
-            legend('Location', 'northeast')
-            title('ClickNKeep Cells--FOV ', string(i))
-        end
+        disp('saved')
+        saveName
+        cur_loc
 
 
         % find where we are in table and add reg loc3 to fl
@@ -133,4 +115,13 @@ for i = 1:numel(my_FOVs)
 
 end
 
-warning('on','all')
+
+
+
+
+
+
+
+%%
+
+% load 

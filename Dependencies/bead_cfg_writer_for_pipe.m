@@ -1,17 +1,23 @@
 %% Finn Clark 12/6/2023
 % writes a cfg file for downstream use in DNA FISH analysis
 
-function [] = bead_cfg_writer_for_pipe(condition_dir, file_name_root, nCh, ref_channel, voxSize)
-
-    basePath = condition_dir;
+function [cfg_path] = bead_cfg_writer_for_pipe(code_dir, split_ch_dir, file_name_root, bead_channels, ref_channel)
+    
+    [d,~] = fileparts(split_ch_dir);
+    basePath = split_ch_dir;
     baseName = file_name_root;
-    projectDir = fileparts(condition_dir); %the dir containing teh dif conditions
+    projectDir = d; %the dir containing your project
     
     % find path to generic triclops cfg
-    b = struct2table(dir(fullfile(pwd, '**/*.*')));
+    b = struct2table(dir(fullfile(code_dir, '**/*.*')));
     t = b(contains(b.name, 'beads_cfg_template_v2'), :);
     t_p = fullfile(t.folder{1}, t.name{1});
     temp_path = t_p;
+    
+    
+    res_path = fullfile(d, 'res');
+    
+    % temp_path
     
     
     myLines = readlines(temp_path);
@@ -21,45 +27,38 @@ function [] = bead_cfg_writer_for_pipe(condition_dir, file_name_root, nCh, ref_c
         
         % replace the placeholder for datasetpath
     
-        if contains(curLine, "basePath")
+        if contains(curLine, "beadImg = basePath")
     
             % replace the place holder withour files base name
-            curLine = strrep(curLine, "basePath", basePath);
+            curLine = strrep(curLine, "basePath", fullfile(basePath, strcat('C{Channel}-',baseName, '_BEADS-{FOV}.tif')) );
     
             myLines(i) = curLine;
         end
-
-            
-        if contains(curLine, "myBaseName")
-    
-            % replace the place holder withour files base name
-            curLine = strrep(curLine, "myBaseName", baseName);
-    
-            myLines(i) = curLine;
         
-            
-        end
-
-        if contains(curLine, "dxy_place")
-
+        if contains(curLine, "loc = basePath")
+    
             % replace the place holder withour files base name
-            curLine = strrep(curLine, "dxy_place", string(voxSize(1)));
+            curLine = strrep(curLine, "basePath", fullfile(basePath, strcat('C{Channel}-', baseName, '_BEADS-{FOV}.loc4')));
     
             myLines(i) = curLine;
         end
 
-        if contains(curLine, "dz_place")
-
+        
+        if contains(curLine, "outFolder= basePath")
+    
             % replace the place holder withour files base name
-            curLine = strrep(curLine, "dz_place", string(voxSize(3)));
+            curLine = strrep(curLine, "basePath",res_path);
     
             myLines(i) = curLine;
         end
+        
+
+        
 
         if contains(curLine, "fishChannels_place")
         
             % replace the place holder withour files base name
-            curLine = strrep(curLine, "fishChannels_place", strjoin(string(1:nCh), ","));
+            curLine = strrep(curLine, "fishChannels_place", strjoin(string(bead_channels), ","));
             
             myLines(i) = curLine;
         end
@@ -75,11 +74,15 @@ function [] = bead_cfg_writer_for_pipe(condition_dir, file_name_root, nCh, ref_c
     
     end
     
-%     myLines
+    % myLines
     
     cfg_savePath = fullfile(projectDir, baseName + ".ini");
     
-    writelines(myLines, cfg_savePath);
+    writelines(myLines, cfg_savePath); 
+
+    cfg_path = cfg_savePath; 
+    
+    
     
     
     disp('');
@@ -89,5 +92,5 @@ function [] = bead_cfg_writer_for_pipe(condition_dir, file_name_root, nCh, ref_c
     disp('');
     
     disp('~~~~~~~');
-    disp('Process Complete');
+    % disp('Process Complete');
 end

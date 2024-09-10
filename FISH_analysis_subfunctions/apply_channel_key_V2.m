@@ -12,23 +12,23 @@ filelist = filelist(~[filelist.isdir]);  %remove folders from list just in case
 % first look in sample folder
 fileFound = 0;
 for i = 1:numel(filelist_samp)
-    if (filelist_samp(i).name == "channelKey.txt")
-        channelKeyPath = fullfile(filelist_samp(i).folder, "channelKey.txt");
+    if contains(filelist_samp(i).name, "channelKey")
+        channelKeyPath = fullfile(filelist_samp(i).folder, filelist_samp(i).name);
         fileFound = 1;
     end
 end
-
+%%
 % if no channel key in sample folder, we look for a master channel
 % key in parent folder
 if fileFound ~= 1
     for i = 1:numel(filelist)
-        if (filelist(i).name == "channelKey.txt")
-            channelKeyPath = fullfile(filelist(i).folder, "channelKey.txt");
+        if contains(filelist(i).name, "channelKey")
+            channelKeyPath = fullfile(filelist(i).folder, filelist(i).name);
             fileFound = 1;
         end
     end
 end
-
+%%
 
 channelKey = readtable(channelKeyPath);
 regModels = cell(max(max(channelKey.uM_FISH_ch), max(channelKey.uM_Bead_ch)));
@@ -57,6 +57,7 @@ for i = 1:numel(filelist_samp)
     end
 end
 
+%%
 % if not see if there is one in the project dir
 if fileFound ~= 1
     for i = 1:numel(filelist)
@@ -68,7 +69,7 @@ if fileFound ~= 1
 end
 
 
-
+%%
 
 % report to user
 if fileFound == 1

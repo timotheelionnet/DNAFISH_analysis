@@ -1,4 +1,4 @@
-%% Finn Clark 12/4/2023
+%% Finn Clark 6/18/2024
 % This function allows you to call AIRLOCALIZE 2 for a given image file and
 % allows you set parameters in-line. Only the first three args are
 % required. Output is loc file and par4 filepath
@@ -78,6 +78,8 @@ else
         error('You must specify thresh type and value: types are ''SD'' or ''Abs'' ');
               
     end
+
+    my_par4 = strrep(my_par4, "threshLevel=4", strcat("threshLevel=",string(threshVal)) );
 end
 
 % load generic params file

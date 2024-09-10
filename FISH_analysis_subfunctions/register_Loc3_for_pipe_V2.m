@@ -11,6 +11,12 @@
  
 %% define channels to register and output dir
 
+try 
+    exist(regModels, "var")
+catch
+    regModels = reg_models;
+end
+
 
 % Extract list of your fish channels with data to be registered
 regChannels = setdiff(allFISHChannels, refChannel);
@@ -241,5 +247,9 @@ savefig(myReg_CDF, fullfile(outFolder, cdfFigName+'.fig'));
 
 
 %% 
+
+disp('~~~~~~')
+disp('Bead Correction Applied')
+disp('~~~~~~')
 
 

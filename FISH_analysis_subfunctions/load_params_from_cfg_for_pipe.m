@@ -30,6 +30,3 @@ disp("~~~~~~Loaded Fileset Containing~~~~~~");
 disp(string(numF) +" FOVs");
 disp(string(numCh) + " Channels");
 disp(" ");
-
-disp(head(fs.fList));
-

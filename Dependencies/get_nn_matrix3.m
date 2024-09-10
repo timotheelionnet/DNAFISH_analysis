@@ -11,7 +11,7 @@
 % If the kwArg voxSize is not specified, then analysis is done in units of
 % pixels
 
-function [nn_mat] = get_nn_matrix(refLoc3List, queryLoc3Lists, nnThresh, options)
+function [nn_mat] = get_nn_matrix3(refLoc3List, queryLoc3Lists, nnThresh, options)
     arguments
         refLoc3List cell
         queryLoc3Lists cell
